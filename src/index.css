@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 13% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+
+    /* Teal/Aqua Blue - Primary Brand Color */
+    --primary: 180 65% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 180 65% 38%;
+    --primary-light: 180 65% 92%;
+    
+    /* Orange - Accent/Urgent Actions */
+    --accent: 30 95% 55%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 30 95% 48%;
+    --accent-light: 30 95% 95%;
+
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 220 13% 13%;
+
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 180 65% 45%;
+
+    --radius: 0.75rem;
+    
+    /* Success color for available seats */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 95%;
+    
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(180 65% 45%), hsl(180 65% 60%));
+    --gradient-accent: linear-gradient(135deg, hsl(30 95% 55%), hsl(30 95% 65%));
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 13% 13% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 13% 13% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(220 13% 13% / 0.1);
+    --shadow-primary: 0 10px 20px -5px hsl(180 65% 45% / 0.3);
+    --shadow-accent: 0 10px 20px -5px hsl(30 95% 55% / 0.3);
+  }
+
+  .dark {
+    --background: 220 13% 9%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 13% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 13% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 180 65% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 180 65% 55%;
+    --primary-light: 180 65% 15%;
+
+    --accent: 30 95% 60%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 30 95% 65%;
+    --accent-light: 30 95% 15%;
+
+    --secondary: 220 13% 16%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 13% 16%;
+    --muted-foreground: 220 9% 65%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 180 65% 50%;
+    
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 15%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
