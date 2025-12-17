@@ -30,12 +30,25 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate email domain
-    const emailDomain = signUpData.email.split("@")[1];
-    if (emailDomain !== "univ.ac.il") {
+    const nameRegex = /^[A-Za-z]{1,20}$/;
+    const emailRegex = /^[A-Za-z]{1,25}@univ\.ac\.il$/;
+
+    // Validate first and last names
+    if (!nameRegex.test(signUpData.firstName) || !nameRegex.test(signUpData.lastName)) {
+      toast({
+        title: "Invalid Name",
+        description: "First and last names must be 1–20 letters (A–Z only).",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate email format
+    if (!emailRegex.test(signUpData.email)) {
       toast({
         title: "Invalid Email",
-        description: "Please use your university email (@univ.ac.il)",
+        description: "Email must be up to 25 letters before @univ.ac.il (A–Z only).",
         variant: "destructive",
       });
       setIsLoading(false);
