@@ -17,6 +17,7 @@ export default function Auth() {
   const [signUpData, setSignUpData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     firstName: "",
     lastName: "",
   });
@@ -54,6 +55,16 @@ export default function Auth() {
       setIsLoading(false);
       return;
     }
+    if (signUpData.password !== signUpData.confirmPassword) {
+      toast({
+        title: "Passwords Do Not Match",
+        description: "Please make sure both password fields are identical.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
 
     const { error } = await supabase.auth.signUp({
       email: signUpData.email,
@@ -150,6 +161,18 @@ export default function Auth() {
                     value={signInData.password}
                     onChange={(e) =>
                       setSignInData({ ...signInData, password: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Input
+                    id="signup-confirm-password"
+                    type="password"
+                    value={signUpData.confirmPassword}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, confirmPassword: e.target.value })
                     }
                     required
                   />
