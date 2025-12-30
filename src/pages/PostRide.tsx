@@ -15,6 +15,8 @@ export default function PostRide() {
   const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [profilePhone, setProfilePhone] = useState<string | null>(null);
+  const [profileBitLink, setProfileBitLink] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     origin: "",
     destination: "",
@@ -40,9 +42,58 @@ export default function PostRide() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // fetch profile phone when session is available
+  useEffect(() => {
+    if (!session?.user) return;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("phone, bit_link")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setProfilePhone(data.phone || null);
+        setProfileBitLink(data.bit_link || null);
+      }
+    })();
+  }, [session]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user) return;
+
+    // require linked phone and bit payment link
+    if (!profilePhone || !profileBitLink) {
+      setIsLoading(false);
+      toast({
+        title: "Profile incomplete",
+        description: "You must add a phone number and a Bit payment link to your profile before posting a ride.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // enforce 1 month limit from today
+    const today = new Date();
+    const max = new Date();
+    max.setMonth(max.getMonth() + 1);
+
+    const selectedDate = new Date(formData.departureDate + "T00:00:00");
+    // normalize times for comparison (compare date portion only)
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const maxDate = new Date(max.getFullYear(), max.getMonth(), max.getDate());
+
+    if (selectedDate < todayDate || selectedDate > maxDate) {
+      setIsLoading(false);
+      toast({
+        title: "Invalid date",
+        description: "Departure date must be within 1 month from today.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsLoading(true);
 
@@ -79,6 +130,15 @@ export default function PostRide() {
   };
 
   if (!session) return null;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const maxDateObj = new Date();
+  maxDateObj.setMonth(maxDateObj.getMonth() + 1);
+  const maxDateStr = maxDateObj.toISOString().split("T")[0];
+
+  const missing: string[] = [];
+  if (!profilePhone) missing.push("phone number");
+  if (!profileBitLink) missing.push("Bit payment link");
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -137,7 +197,8 @@ export default function PostRide() {
                     onChange={(e) =>
                       setFormData({ ...formData, departureDate: e.target.value })
                     }
-                    min={new Date().toISOString().split("T")[0]}
+                    min={todayStr}
+                    max={maxDateStr}
                     required
                   />
                 </div>
@@ -191,10 +252,24 @@ export default function PostRide() {
               <Button
                 type="submit"
                 className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
-                disabled={isLoading}
+                disabled={isLoading || missing.length > 0}
               >
                 {isLoading ? "Publishing..." : "Publish Ride"}
               </Button>
+              {missing.length > 0 && (
+                <div className="text-sm text-destructive mt-2 flex items-center gap-2">
+                  <span>
+                    You must add {missing.join(" and ")} to your profile before posting a ride.
+                  </span>
+                  <button
+                    type="button"
+                    className="underline text-primary-foreground"
+                    onClick={() => navigate("/profile")}
+                  >
+                    Edit profile
+                  </button>
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>
