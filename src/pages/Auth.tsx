@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Car } from "lucide-react";
+import { IsraeliAcademicDomains } from "@/lib/israeliAcademicDomains";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function Auth() {
     setIsLoading(true);
 
     const nameRegex = /^[A-Za-z]{1,20}$/;
-    const emailRegex = /^[A-Za-z]{1,25}@univ\.ac\.il$/;
+
 
     // Validate first and last names
     if (!nameRegex.test(signUpData.firstName) || !nameRegex.test(signUpData.lastName)) {
@@ -45,16 +46,40 @@ export default function Auth() {
       return;
     }
 
-    // Validate email format
-    if (!emailRegex.test(signUpData.email)) {
+    // Split email into local part and domain
+    const [localPart, domain] = signUpData.email.split("@");
+    // Validate that email contains exactly one "@"
+    if (!localPart || !domain) {
       toast({
-        title: "Invalid Email",
-        description: "Email must be up to 25 letters before @univ.ac.il (A–Z only).",
+        title: "Invalid Email Format",
+        description: "Email must contain a single @ symbol.",
         variant: "destructive",
       });
       setIsLoading(false);
       return;
     }
+
+    const localPartRegex = /^[A-Za-z0-9._%+-]{1,25}$/;
+    if (!localPartRegex.test(localPart)) {
+      toast({
+        title: "Invalid Email Username",
+        description:
+          "The part before @ must be 1–25 characters and contain only English letters, numbers, and . _ % + -",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    if (!IsraeliAcademicDomains.includes(domain)) {
+      toast({
+        title: "Unrecognized Academic Institution",
+        description: "Please use an email from a recognized Israeli university or college.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     if (signUpData.password !== signUpData.confirmPassword) {
       toast({
         title: "Passwords Do Not Match",
@@ -165,18 +190,6 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                  <Input
-                    id="signup-confirm-password"
-                    type="password"
-                    value={signUpData.confirmPassword}
-                    onChange={(e) =>
-                      setSignUpData({ ...signUpData, confirmPassword: e.target.value })
-                    }
-                    required
-                  />
-                </div>
                 <Button
                   type="submit"
                   className="w-full bg-primary hover:bg-primary-hover"
@@ -226,7 +239,7 @@ export default function Auth() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must be a @univ.ac.il email address
+                    Must be a valid Israeli academic email address (instituite.ac.il)
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -240,6 +253,18 @@ export default function Auth() {
                     }
                     required
                     minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Input
+                    id="signup-confirm-password"
+                    type="password"
+                    value={signUpData.confirmPassword}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, confirmPassword: e.target.value })
+                    }
+                    required
                   />
                 </div>
                 <Button
