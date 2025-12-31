@@ -7,5 +7,5 @@ export const IsraeliAcademicDomains = [
   "wgalil.ac.il", "zefat.ac.il", "achva.ac.il", "sami-shamoon.ac.il", "jerusalemacademy.ac.il",
   "bezalel.ac.il", "colman.ac.il", "clb.ac.il", "maxstern.ac.il", "ohalo.ac.il",
   "shaanan.ac.il", "talpiot.ac.il", "emuna.ac.il", "herzog.ac.il", "orot.ac.il",
-  "sakhnin.ac.il", "carmel.ac.il", "jerusalem-college.ac.il", "lev.ac.il","msmail.ac.ariel.il"
+  "sakhnin.ac.il", "carmel.ac.il", "jerusalem-college.ac.il", "lev.ac.il","msmail.ariel.ac.il"
 ];

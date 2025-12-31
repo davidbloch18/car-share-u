@@ -91,7 +91,7 @@ export default function Auth() {
     }
 
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: signUpData.email,
       password: signUpData.password,
       options: {
@@ -112,11 +112,18 @@ export default function Auth() {
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Welcome to Ride-Share U!",
-        description: "Your account has been created successfully.",
-      });
-      navigate("/home");
+      if (data.session) {
+        toast({
+          title: "Welcome to Ride-Share U!",
+          description: "Your account has been created successfully.",
+        });
+        navigate("/home");
+      } else {
+        toast({
+          title: "Verification Email Sent",
+          description: "Please check your university email to verify your account. You can only log in after verification.",
+        });
+      }
     }
   };
 
@@ -132,9 +139,14 @@ export default function Auth() {
     setIsLoading(false);
 
     if (error) {
+      let description = error.message;
+      if (error.message.includes("Email not confirmed")) {
+        description = "Please verify your university email before logging in.";
+      }
+
       toast({
         title: "Sign In Failed",
-        description: error.message,
+        description: description,
         variant: "destructive",
       });
     } else {
