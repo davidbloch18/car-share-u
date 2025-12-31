@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,8 @@ import { IsraeliAcademicDomains } from "@/lib/israeliAcademicDomains";
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, signIn } = useAuthViewModel();
+  const [isLoading, setIsLoading] = useState<"signin" | "signup" | null>(null);
 
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -30,7 +31,6 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     const nameRegex = /^[A-Za-z]{1,20}$/;
 
@@ -42,7 +42,6 @@ export default function Auth() {
         description: "First and last names must be 1–20 letters (A–Z only).",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
 
@@ -55,7 +54,6 @@ export default function Auth() {
         description: "Email must contain a single @ symbol.",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
 
@@ -67,7 +65,6 @@ export default function Auth() {
           "The part before @ must be 1–25 characters and contain only English letters, numbers, and . _ % + -",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
     if (!IsraeliAcademicDomains.includes(domain)) {
@@ -76,7 +73,6 @@ export default function Auth() {
         description: "Please use an email from a recognized Israeli university or college.",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
 
@@ -86,24 +82,19 @@ export default function Auth() {
         description: "Please make sure both password fields are identical.",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
 
 
-    const { data, error } = await supabase.auth.signUp({
+    setIsLoading("signup");
+    const { data, error } = await signUp({
       email: signUpData.email,
       password: signUpData.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/home`,
-        data: {
-          first_name: signUpData.firstName,
-          last_name: signUpData.lastName,
-        },
-      },
+      firstName: signUpData.firstName,
+      lastName: signUpData.lastName,
+      redirectTo: `${window.location.origin}/home`,
     });
-
-    setIsLoading(false);
+    setIsLoading(null);
 
     if (error) {
       toast({
@@ -112,41 +103,28 @@ export default function Auth() {
         variant: "destructive",
       });
     } else {
-      if (data.session) {
-        toast({
-          title: "Welcome to Ride-Share U!",
-          description: "Your account has been created successfully.",
-        });
-        navigate("/home");
-      } else {
-        toast({
-          title: "Verification Email Sent",
-          description: "Please check your university email to verify your account. You can only log in after verification.",
-        });
-      }
+      toast({
+        title: "Welcome to Ride-Share U!",
+        description: "Your account has been created successfully.",
+      });
+      navigate("/home");
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    setIsLoading("signin");
+    const { error } = await signIn({
       email: signInData.email,
       password: signInData.password,
     });
-
-    setIsLoading(false);
+    setIsLoading(null);
 
     if (error) {
-      let description = error.message;
-      if (error.message.includes("Email not confirmed")) {
-        description = "Please verify your university email before logging in.";
-      }
-
       toast({
         title: "Sign In Failed",
-        description: description,
+        description: error.message,
         variant: "destructive",
       });
     } else {
@@ -205,9 +183,9 @@ export default function Auth() {
                 <Button
                   type="submit"
                   className="w-full bg-primary hover:bg-primary-hover"
-                  disabled={isLoading}
+                  disabled={isLoading === "signin"}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading === "signin" ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
             </TabsContent>
@@ -282,9 +260,9 @@ export default function Auth() {
                 <Button
                   type="submit"
                   className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
-                  disabled={isLoading}
+                  disabled={isLoading === "signup"}
                 >
-                  {isLoading ? "Creating account..." : "Sign Up"}
+                  {isLoading === "signup" ? "Creating account..." : "Sign Up"}
                 </Button>
               </form>
             </TabsContent>

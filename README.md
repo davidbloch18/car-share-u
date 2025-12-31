@@ -6,6 +6,29 @@
 
 ## How can I edit this code?
 
+---
+
+## MVVM ViewModels ✅
+
+This project now follows a lightweight MVVM pattern using React hooks as "ViewModels" located in `src/viewmodels/`.
+
+Implemented ViewModels:
+
+- `useAuthViewModel` — centralizes auth state and actions (`signUp`, `signIn`, `signOut`, session`) and wraps the Supabase client.
+- `useRidesViewModel` — handles fetching rides, creating rides, booking and ride-related logic.
+- `useProfileViewModel` — manages fetching and updating the user's profile.
+
+Why this helps:
+- Keeps pages (Views) focused on rendering and UI concerns.
+- Centralizes business logic and API calls in testable hooks (ViewModels).
+- Easier to add unit tests and reuse logic across components.
+
+How to run the tests:
+
+1. Install dev deps: `pnpm install` / `npm install`
+2. Run: `npm test`
+
+
 There are several ways of editing your application.
 
 **Use Lovable**

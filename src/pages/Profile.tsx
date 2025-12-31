@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,14 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Star, LogOut, CheckCircle, XCircle } from "lucide-react";
-import type { Session } from "@supabase/supabase-js";
+import { useProfileViewModel } from "@/viewmodels/useProfileViewModel";
+import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 
 export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { session, signOut } = useAuthViewModel();
+  const { profile, isLoading, fetchProfile, updateProfile } = useProfileViewModel();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -26,75 +25,35 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) navigate("/auth");
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (!session) navigate("/auth");
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session === null) navigate("/auth");
+  }, [session, navigate]);
 
   useEffect(() => {
-    if (session) {
-      fetchProfile();
-    }
-  }, [session]);
-
-  const fetchProfile = async () => {
-    if (!session?.user) return;
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .single();
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load profile",
-        variant: "destructive",
-      });
-    } else {
-      setProfile(data);
+    if (profile) {
       setFormData({
-        firstName: data.first_name || "",
-        lastName: data.last_name || "",
-        phone: data.phone || "",
-        bitLink: data.bit_link || "",
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        phone: profile.phone || "",
+        bitLink: profile.bit_link || "",
       });
     }
-  };
+  }, [profile]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user) return;
 
-    setIsLoading(true);
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        phone: formData.phone,
-        bit_link: formData.bitLink,
-      })
-      .eq("id", session.user.id);
-
-    setIsLoading(false);
+    const { error } = await updateProfile({
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      phone: formData.phone,
+      bit_link: formData.bitLink,
+    });
 
     if (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: (error as any).message || "Failed to update profile",
         variant: "destructive",
       });
     } else {
@@ -107,7 +66,7 @@ export default function Profile() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate("/auth");
   };
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { RideCard } from "@/components/RideCard";
 import { Input } from "@/components/ui/input";
@@ -8,74 +7,29 @@ import { Button } from "@/components/ui/button";
 import { Search, MapPin, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Session } from "@supabase/supabase-js";
+import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
+import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 
 export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [session, setSession] = useState<Session | null>(null);
-  const [rides, setRides] = useState<any[]>([]);
+  const { session } = useAuthViewModel();
+  const { rides, isLoading, fetchRides } = useRidesViewModel();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>("today");
 
   useEffect(() => {
-    // Check auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (!session) {
-          navigate("/auth");
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session === null) {
+      navigate("/auth");
+    }
+  }, [session, navigate]);
 
   useEffect(() => {
     if (session) {
       fetchRides();
     }
-  }, [session]);
+  }, [session, fetchRides]);
 
-  const fetchRides = async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from("rides")
-      .select(
-        `
-        *,
-        driver:profiles!rides_driver_id_fkey(
-          first_name,
-          last_name,
-          avatar_url,
-          rating_score,
-          rating_count
-        )
-      `
-      )
-      .eq("status", "active")
-      .gte("departure_time", new Date().toISOString())
-      .order("departure_time", { ascending: true });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load rides",
-        variant: "destructive",
-      });
-    } else {
-      setRides(data || []);
-    }
-    setIsLoading(false);
-  };
 
   const getFilteredRides = () => {
     let filtered = rides;

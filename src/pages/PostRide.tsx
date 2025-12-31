@@ -9,11 +9,14 @@ import { BottomNav } from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
+import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
+import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 
 export default function PostRide() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [session, setSession] = useState<Session | null>(null);
+  const { session } = useAuthViewModel();
+  const { createRide } = useRidesViewModel();
   const [isLoading, setIsLoading] = useState(false);
   const [profilePhone, setProfilePhone] = useState<string | null>(null);
   const [profileBitLink, setProfileBitLink] = useState<string | null>(null);
@@ -27,20 +30,8 @@ export default function PostRide() {
   });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) navigate("/auth");
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (!session) navigate("/auth");
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session === null) navigate("/auth");
+  }, [session, navigate]);
 
   // fetch profile phone when session is available
   useEffect(() => {
@@ -101,7 +92,7 @@ export default function PostRide() {
       `${formData.departureDate}T${formData.departureTime}`
     ).toISOString();
 
-    const { error } = await supabase.from("rides").insert({
+    const { error } = await createRide({
       driver_id: session.user.id,
       origin: formData.origin,
       destination: formData.destination,
@@ -109,7 +100,6 @@ export default function PostRide() {
       seats_total: parseInt(formData.seats),
       seats_available: parseInt(formData.seats),
       cost: parseFloat(formData.cost),
-      status: "active",
     });
 
     setIsLoading(false);

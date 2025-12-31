@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,32 +8,25 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Clock, Users, Car, CheckCircle2, Send } from "lucide-react";
 import { format } from "date-fns";
 import type { Session } from "@supabase/supabase-js";
+import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
+import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 
 export default function RideDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [session, setSession] = useState<Session | null>(null);
+  const { session } = useAuthViewModel();
+  const { getRideById, getBookings, bookRide } = useRidesViewModel();
   const [ride, setRide] = useState<any>(null);
   const [passengers, setPassengers] = useState<any[]>([]);
   const [isBooked, setIsBooked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) navigate("/auth");
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (!session) navigate("/auth");
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session === null) {
+      navigate("/auth");
+    }
+  }, [session, navigate]);
 
   useEffect(() => {
     if (session && id) {
@@ -44,16 +36,7 @@ export default function RideDetails() {
   }, [session, id]);
 
   const fetchRideDetails = async () => {
-    const { data: rideData, error: rideError } = await supabase
-      .from("rides")
-      .select(
-        `
-        *,
-        driver:profiles!rides_driver_id_fkey(*)
-      `
-      )
-      .eq("id", id)
-      .single();
+    const { data: rideData, error: rideError } = await getRideById(id as string);
 
     if (rideError) {
       toast({
@@ -67,32 +50,20 @@ export default function RideDetails() {
     setRide(rideData);
 
     // Fetch passengers
-    const { data: bookingsData } = await supabase
-      .from("bookings")
-      .select(
-        `
-        *,
-        passenger:profiles!bookings_passenger_id_fkey(*)
-      `
-      )
-      .eq("ride_id", id)
-      .eq("status", "confirmed");
-
-    setPassengers(bookingsData || []);
+    const { data: bookingsData, error: bookingsError } = await getBookings(id as string);
+    if (!bookingsError) {
+      setPassengers(bookingsData || []);
+    }
   };
 
   const checkBookingStatus = async () => {
     if (!session?.user) return;
 
-    const { data } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("ride_id", id)
-      .eq("passenger_id", session.user.id)
-      .eq("status", "confirmed")
-      .maybeSingle();
-
-    setIsBooked(!!data);
+    const { data: bookingsData } = await getBookings(id as string);
+    const isUserBooked = !!(bookingsData || []).find(
+      (b: any) => b.passenger && b.passenger.id === session.user.id
+    );
+    setIsBooked(isUserBooked);
   };
 
   const handleJoinRide = async () => {
@@ -118,15 +89,16 @@ export default function RideDetails() {
 
     setIsLoading(true);
 
-    // Insert booking
-    const { error: bookingError } = await supabase.from("bookings").insert({
+    const { error: bookingError } = await bookRide({
       ride_id: ride.id,
       passenger_id: session.user.id,
-      status: "confirmed",
+      currentSeats: ride.seats_available,
     });
 
+    setIsLoading(false);
+
     if (bookingError) {
-      if (bookingError.code === "23505") {
+      if ((bookingError as any).code === "23505") {
         toast({
           title: "Already Booked",
           description: "You have already joined this ride.",
@@ -135,36 +107,19 @@ export default function RideDetails() {
       } else {
         toast({
           title: "Error",
-          description: bookingError.message,
+          description: bookingError.message || "Failed to book",
           variant: "destructive",
         });
       }
-      setIsLoading(false);
       return;
     }
 
-    // Update seats
-    const { error: updateError } = await supabase
-      .from("rides")
-      .update({ seats_available: ride.seats_available - 1 })
-      .eq("id", ride.id);
-
-    setIsLoading(false);
-
-    if (updateError) {
-      toast({
-        title: "Error",
-        description: "Failed to update ride",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Booking Confirmed!",
-        description: "You have successfully joined this ride.",
-      });
-      fetchRideDetails();
-      checkBookingStatus();
-    }
+    toast({
+      title: "Booking Confirmed!",
+      description: "You have successfully joined this ride.",
+    });
+    fetchRideDetails();
+    checkBookingStatus();
   };
 
   if (!session || !ride) return null;
