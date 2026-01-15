@@ -107,7 +107,7 @@ export default function Profile() {
         {/* Verification Status */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 {profile.is_verified ? (
                   <CheckCircle className="h-5 w-5 text-success" />
@@ -127,6 +127,34 @@ export default function Profile() {
                 }
               >
                 {profile.is_verified ? "Verified" : "Not Verified"}
+              </Badge>
+            </div>
+            
+            {/* Email Confirmation Status */}
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center gap-2">
+                {session?.user?.email_confirmed_at ? (
+                  <CheckCircle className="h-5 w-5 text-success" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-amber-500" />
+                )}
+                <div>
+                  <p className="font-semibold">Email Confirmation</p>
+                  <p className="text-sm text-muted-foreground">
+                    {session?.user?.email_confirmed_at 
+                      ? "Email confirmed" 
+                      : "Email not confirmed yet"}
+                  </p>
+                </div>
+              </div>
+              <Badge
+                className={
+                  session?.user?.email_confirmed_at
+                    ? "bg-success-light text-success border-success"
+                    : "bg-amber-100 text-amber-700 border-amber-300"
+                }
+              >
+                {session?.user?.email_confirmed_at ? "Confirmed" : "Pending"}
               </Badge>
             </div>
           </CardContent>
