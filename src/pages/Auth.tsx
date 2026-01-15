@@ -67,7 +67,8 @@ export default function Auth() {
       });
       return;
     }
-    if (!IsraeliAcademicDomains.includes(domain)) {
+    // Allow gmail.com for testing purposes
+    if (!IsraeliAcademicDomains.includes(domain) && domain !== "gmail.com") {
       toast({
         title: "Unrecognized Academic Institution",
         description: "Please use an email from a recognized Israeli university or college.",
