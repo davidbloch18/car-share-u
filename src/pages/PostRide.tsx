@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BottomNav } from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
 import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
@@ -20,6 +22,7 @@ export default function PostRide() {
   const [isLoading, setIsLoading] = useState(false);
   const [profilePhone, setProfilePhone] = useState<string | null>(null);
   const [profileBitLink, setProfileBitLink] = useState<string | null>(null);
+  const [isRecurring, setIsRecurring] = useState(false);
   const [formData, setFormData] = useState({
     origin: "",
     destination: "",
@@ -27,6 +30,9 @@ export default function PostRide() {
     departureTime: "",
     seats: "",
     cost: "",
+    recurringFrequency: "weekly" as "daily" | "weekly",
+    recurringEndDate: "",
+    recurringDaysOfWeek: [] as number[], // 0 = Sunday, 6 = Saturday
   });
 
   useEffect(() => {
@@ -72,7 +78,6 @@ export default function PostRide() {
     max.setMonth(max.getMonth() + 1);
 
     const selectedDate = new Date(formData.departureDate + "T00:00:00");
-    // normalize times for comparison (compare date portion only)
     const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const maxDate = new Date(max.getFullYear(), max.getMonth(), max.getDate());
 
@@ -86,37 +91,157 @@ export default function PostRide() {
       return;
     }
 
+    // Validate recurring ride settings
+    if (isRecurring) {
+      if (!formData.recurringEndDate) {
+        toast({
+          title: "Missing end date",
+          description: "Please select an end date for recurring rides.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const endDate = new Date(formData.recurringEndDate + "T00:00:00");
+      if (endDate <= selectedDate) {
+        toast({
+          title: "Invalid end date",
+          description: "End date must be after the first ride date.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (endDate > maxDate) {
+        toast({
+          title: "End date too far",
+          description: "Recurring rides cannot extend beyond 1 month.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (formData.recurringFrequency === "weekly" && formData.recurringDaysOfWeek.length === 0) {
+        toast({
+          title: "No days selected",
+          description: "Please select at least one day of the week for weekly recurring rides.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
 
-    const departureDateTime = new Date(
-      `${formData.departureDate}T${formData.departureTime}`
-    ).toISOString();
+    try {
+      if (isRecurring) {
+        // Generate multiple rides based on recurrence pattern
+        const rides = generateRecurringRides();
+        
+        let successCount = 0;
+        for (const rideDate of rides) {
+          const departureDateTime = new Date(
+            `${rideDate.toISOString().split('T')[0]}T${formData.departureTime}`
+          ).toISOString();
 
-    const { error } = await createRide({
-      driver_id: session.user.id,
-      origin: formData.origin,
-      destination: formData.destination,
-      departure_time: departureDateTime,
-      seats_total: parseInt(formData.seats),
-      seats_available: parseInt(formData.seats),
-      cost: parseFloat(formData.cost),
-    });
+          const { error } = await createRide({
+            driver_id: session.user.id,
+            origin: formData.origin,
+            destination: formData.destination,
+            departure_time: departureDateTime,
+            seats_total: parseInt(formData.seats),
+            seats_available: parseInt(formData.seats),
+            cost: parseFloat(formData.cost),
+          });
 
-    setIsLoading(false);
+          if (!error) successCount++;
+        }
 
-    if (error) {
+        setIsLoading(false);
+        if (successCount > 0) {
+          toast({
+            title: "Recurring Rides Posted!",
+            description: `Successfully created ${successCount} ride${successCount > 1 ? 's' : ''}.`,
+          });
+          navigate("/home");
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to create recurring rides.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Single ride
+        const departureDateTime = new Date(
+          `${formData.departureDate}T${formData.departureTime}`
+        ).toISOString();
+
+        const { error } = await createRide({
+          driver_id: session.user.id,
+          origin: formData.origin,
+          destination: formData.destination,
+          departure_time: departureDateTime,
+          seats_total: parseInt(formData.seats),
+          seats_available: parseInt(formData.seats),
+          cost: parseFloat(formData.cost),
+        });
+
+        setIsLoading(false);
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Ride Posted!",
+            description: "Your ride has been published successfully.",
+          });
+          navigate("/home");
+        }
+      }
+    } catch (err) {
+      setIsLoading(false);
       toast({
         title: "Error",
-        description: error.message,
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Ride Posted!",
-        description: "Your ride has been published successfully.",
-      });
-      navigate("/home");
     }
+  };
+
+  const generateRecurringRides = (): Date[] => {
+    const rides: Date[] = [];
+    const startDate = new Date(formData.departureDate + "T00:00:00");
+    const endDate = new Date(formData.recurringEndDate + "T00:00:00");
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      if (formData.recurringFrequency === "daily") {
+        rides.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      } else if (formData.recurringFrequency === "weekly") {
+        const dayOfWeek = currentDate.getDay();
+        if (formData.recurringDaysOfWeek.includes(dayOfWeek)) {
+          rides.push(new Date(currentDate));
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
+    return rides;
+  };
+
+  const toggleDayOfWeek = (day: number) => {
+    setFormData(prev => ({
+      ...prev,
+      recurringDaysOfWeek: prev.recurringDaysOfWeek.includes(day)
+        ? prev.recurringDaysOfWeek.filter(d => d !== day)
+        : [...prev.recurringDaysOfWeek, day].sort()
+    }));
   };
 
   if (!session) return null;
@@ -204,6 +329,85 @@ export default function PostRide() {
                     required
                   />
                 </div>
+              </div>
+
+              {/* Recurring Rides Section */}
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+                  />
+                  <Label htmlFor="recurring" className="cursor-pointer font-medium">
+                    Make this a recurring ride
+                  </Label>
+                </div>
+
+                {isRecurring && (
+                  <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <p>Create multiple rides automatically based on your schedule</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency">Frequency</Label>
+                      <Select
+                        value={formData.recurringFrequency}
+                        onValueChange={(value: "daily" | "weekly") =>
+                          setFormData({ ...formData, recurringFrequency: value })
+                        }
+                      >
+                        <SelectTrigger id="frequency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.recurringFrequency === "weekly" && (
+                      <div className="space-y-2">
+                        <Label>Select Days</Label>
+                        <div className="grid grid-cols-7 gap-2">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                            <Button
+                              key={day}
+                              type="button"
+                              variant={formData.recurringDaysOfWeek.includes(index) ? "default" : "outline"}
+                              size="sm"
+                              className="h-10 text-xs"
+                              onClick={() => toggleDayOfWeek(index)}
+                            >
+                              {day}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">End Date</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.recurringEndDate}
+                        onChange={(e) =>
+                          setFormData({ ...formData, recurringEndDate: e.target.value })
+                        }
+                        min={formData.departureDate || todayStr}
+                        max={maxDateStr}
+                        required={isRecurring}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Rides will be created until this date (max 1 month)
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

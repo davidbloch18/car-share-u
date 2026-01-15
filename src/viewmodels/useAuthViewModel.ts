@@ -89,6 +89,18 @@ export function useAuthViewModel() {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      return { error };
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return {
     session,
     user: session?.user ?? null,
@@ -97,6 +109,7 @@ export function useAuthViewModel() {
     signUp,
     signIn,
     signOut,
+    resetPassword,
     getSession: () => session,
   } as const;
 }

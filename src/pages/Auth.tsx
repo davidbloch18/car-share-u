@@ -13,8 +13,10 @@ import { IsraeliAcademicDomains } from "@/lib/israeliAcademicDomains";
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signUp, signIn } = useAuthViewModel();
-  const [isLoading, setIsLoading] = useState<"signin" | "signup" | null>(null);
+  const { signUp, signIn, resetPassword } = useAuthViewModel();
+  const [isLoading, setIsLoading] = useState<"signin" | "signup" | "reset" | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -133,6 +135,29 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setIsLoading("reset");
+    const { error } = await resetPassword(resetEmail);
+    setIsLoading(null);
+
+    if (error) {
+      toast({
+        title: "Reset Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Check Your Email",
+        description: "We've sent you a password reset link. Please check your email.",
+      });
+      setShowForgotPassword(false);
+      setResetEmail("");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light to-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -155,40 +180,87 @@ export default function Auth() {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="you@univ.ac.il"
-                    value={signInData.email}
-                    onChange={(e) =>
-                      setSignInData({ ...signInData, email: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={signInData.password}
-                    onChange={(e) =>
-                      setSignInData({ ...signInData, password: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary-hover"
-                  disabled={isLoading === "signin"}
-                >
-                  {isLoading === "signin" ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
+              {!showForgotPassword ? (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="you@univ.ac.il"
+                      value={signInData.email}
+                      onChange={(e) =>
+                        setSignInData({ ...signInData, email: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      value={signInData.password}
+                      onChange={(e) =>
+                        setSignInData({ ...signInData, password: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-hover"
+                    disabled={isLoading === "signin"}
+                  >
+                    {isLoading === "signin" ? "Signing in..." : "Sign In"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="w-full text-sm text-primary"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Forgot Password?
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="you@univ.ac.il"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter your email to receive a password reset link
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setResetEmail("");
+                      }}
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-primary hover:bg-primary-hover"
+                      disabled={isLoading === "reset"}
+                    >
+                      {isLoading === "reset" ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </TabsContent>
 
             <TabsContent value="signup">
