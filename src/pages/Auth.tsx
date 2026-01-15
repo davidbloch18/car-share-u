@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,14 +9,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Car } from "lucide-react";
 import { IsraeliAcademicDomains } from "@/lib/israeliAcademicDomains";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const { signUp, signIn, resetPassword } = useAuthViewModel();
-  const [isLoading, setIsLoading] = useState<"signin" | "signup" | "reset" | null>(null);
+  const [isLoading, setIsLoading] = useState<"signin" | "signup" | "reset" | "updatePassword" | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+
+  useEffect(() => {
+    // Check if user is coming from password reset email
+    const resetToken = searchParams.get('reset');
+    if (resetToken === 'true') {
+      setShowResetPassword(true);
+    }
+  }, [searchParams]);
 
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -158,6 +171,48 @@ export default function Auth() {
     }
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "Please make sure both password fields are identical.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading("updatePassword");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsLoading(null);
+
+    if (error) {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Password Updated",
+        description: "Your password has been updated successfully. You can now sign in.",
+      });
+      setShowResetPassword(false);
+      setNewPassword("");
+      setConfirmNewPassword("");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-light to-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -169,10 +224,42 @@ export default function Auth() {
             Ride-Share U
           </CardTitle>
           <CardDescription>
-            Community carpooling for university students
+            {showResetPassword ? "Reset Your Password" : "Community carpooling for university students"}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {showResetPassword ? (
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary-hover"
+                disabled={isLoading === "updatePassword"}
+              >
+                {isLoading === "updatePassword" ? "Updating..." : "Update Password"}
+              </Button>
+            </form>
+          ) : (
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -340,6 +427,7 @@ export default function Auth() {
               </form>
             </TabsContent>
           </Tabs>
+          )}
         </CardContent>
       </Card>
     </div>

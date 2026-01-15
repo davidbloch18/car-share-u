@@ -25,8 +25,12 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (session === null) navigate("/auth");
-  }, [session, navigate]);
+    if (session === null) {
+      navigate("/auth");
+    } else if (session && !profile) {
+      fetchProfile();
+    }
+  }, [session, navigate, profile, fetchProfile]);
 
   useEffect(() => {
     if (profile) {

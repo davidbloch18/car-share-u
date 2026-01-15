@@ -4,7 +4,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { RideCard } from "@/components/RideCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, SlidersHorizontal } from "lucide-react";
+import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
@@ -89,31 +89,15 @@ export default function Home() {
             <h1 className="text-3xl font-bold mb-1">Available Rides</h1>
             <p className="text-primary-foreground/90 text-sm">Find your next commute</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary-foreground hover:bg-primary-foreground/10 rounded-full"
-          >
-            <MapPin className="h-6 w-6" />
-          </Button>
         </div>
-        <div className="relative flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Where are you going?"
-              className="pl-10 bg-background text-foreground border-0"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary-foreground hover:bg-primary-foreground/10 rounded-lg shrink-0"
-          >
-            <SlidersHorizontal className="h-5 w-5" />
-          </Button>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Where are you going?"
+            className="pl-10 bg-background text-foreground border-0"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </header>
 
