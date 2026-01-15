@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Clock, Users, Car, CheckCircle2, Send } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, MapPin, Clock, Users, Car, CheckCircle2, Send, Edit } from "lucide-react";
 import { format } from "date-fns";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
@@ -21,6 +23,8 @@ export default function RideDetails() {
   const [passengers, setPassengers] = useState<any[]>([]);
   const [isBooked, setIsBooked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPickup, setSelectedPickup] = useState<string>("");
+  const [selectedDropoff, setSelectedDropoff] = useState<string>("");
 
   useEffect(() => {
     if (session === null) {
@@ -87,12 +91,32 @@ export default function RideDetails() {
       return;
     }
 
+    if (ride.pickup_points && ride.pickup_points.length > 0 && !selectedPickup) {
+      toast({
+        title: "Pickup Point Required",
+        description: "Please select a pickup point.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (ride.dropoff_points && ride.dropoff_points.length > 0 && !selectedDropoff) {
+      toast({
+        title: "Dropoff Point Required",
+        description: "Please select a dropoff point.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     const { error: bookingError } = await bookRide({
       ride_id: ride.id,
       passenger_id: session.user.id,
       currentSeats: ride.seats_available,
+      pickup_point: selectedPickup || ride.origin,
+      dropoff_point: selectedDropoff || ride.destination
     });
 
     setIsLoading(false);
@@ -139,6 +163,16 @@ export default function RideDetails() {
           <ArrowLeft className="h-6 w-6" />
         </Button>
         <h1 className="text-xl font-semibold">Ride Details</h1>
+        {isDriver && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/post-ride", { state: { editRide: ride } })}
+            className="text-primary-foreground hover:bg-primary-foreground/10 ml-auto"
+          >
+            <Edit className="h-5 w-5" />
+          </Button>
+        )}
       </header>
 
       <main className="p-4 space-y-3 max-w-2xl mx-auto">
@@ -147,7 +181,14 @@ export default function RideDetails() {
           <div className="flex items-start gap-3 mb-4">
             <div className="relative">
               <Avatar className="h-14 w-14">
-                <AvatarImage src={ride.driver.avatar_url} />
+                <AvatarImage 
+                  src={
+                    ride.driver.avatar_url || 
+                    (ride.driver.gender?.toLowerCase() === "male" 
+                      ? "https://avatar.iran.liara.run/public/boy" 
+                      : "https://avatar.iran.liara.run/public/girl")
+                  } 
+                />
                 <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                   {initials}
                 </AvatarFallback>
@@ -184,23 +225,32 @@ export default function RideDetails() {
           )}
         </Card>
 
-        {/* Pickup Point */}
-        {ride.pickup_point && (
-          <Card className="p-5">
-            <div className="flex items-start gap-3">
-              <div className="bg-primary/10 rounded-full p-2.5 mt-0.5">
-                <MapPin className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground mb-1">Pickup Point</p>
-                <p className="font-semibold text-base mb-1">{ride.pickup_point}</p>
-                {ride.pickup_description && (
-                  <p className="text-sm text-muted-foreground">{ride.pickup_description}</p>
-                )}
-              </div>
+        {/* Pickup Location */}
+        <Card className="p-5">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 rounded-full p-2.5 mt-0.5">
+              <MapPin className="h-5 w-5 text-primary" />
             </div>
-          </Card>
-        )}
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">Pickup Location</p>
+              <p className="font-semibold text-base mb-2">{ride.origin}</p>
+              
+              {!isDriver && !isBooked && ride.pickup_points && ride.pickup_points.length > 0 && (
+                <div className="mt-2 text-sm bg-muted/40 p-3 rounded-md">
+                   <p className="font-medium mb-2 text-destructive">Please choose your pickup point *</p>
+                   <RadioGroup value={selectedPickup} onValueChange={setSelectedPickup}>
+                      {ride.pickup_points.map((point: string, i: number) => (
+                        <div key={i} className="flex items-center space-x-2">
+                          <RadioGroupItem value={point} id={`pickup-${i}`} />
+                          <Label htmlFor={`pickup-${i}`} className="text-sm font-normal cursor-pointer">{point}</Label>
+                        </div>
+                      ))}
+                   </RadioGroup>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
 
         {/* Destination */}
         <Card className="p-5">
@@ -210,7 +260,21 @@ export default function RideDetails() {
             </div>
             <div className="flex-1">
               <p className="text-xs text-muted-foreground mb-1">Destination</p>
-              <p className="font-semibold text-base">{ride.destination}</p>
+              <p className="font-semibold text-base mb-2">{ride.destination}</p>
+
+              {!isDriver && !isBooked && ride.dropoff_points && ride.dropoff_points.length > 0 && (
+                <div className="mt-2 text-sm bg-muted/40 p-3 rounded-md">
+                   <p className="font-medium mb-2 text-destructive">Please choose your dropoff point *</p>
+                   <RadioGroup value={selectedDropoff} onValueChange={setSelectedDropoff}>
+                      {ride.dropoff_points.map((point: string, i: number) => (
+                        <div key={i} className="flex items-center space-x-2">
+                          <RadioGroupItem value={point} id={`dropoff-${i}`} />
+                          <Label htmlFor={`dropoff-${i}`} className="text-sm font-normal cursor-pointer">{point}</Label>
+                        </div>
+                      ))}
+                   </RadioGroup>
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -269,7 +333,14 @@ export default function RideDetails() {
               {passengers.map((booking) => (
                 <div key={booking.id} className="flex flex-col items-center">
                   <Avatar className="h-12 w-12 mb-1">
-                    <AvatarImage src={booking.passenger.avatar_url} />
+                    <AvatarImage 
+                      src={
+                        booking.passenger.avatar_url || 
+                        (booking.passenger.gender?.toLowerCase() === "male" 
+                          ? "https://avatar.iran.liara.run/public/boy" 
+                          : "https://avatar.iran.liara.run/public/girl")
+                      } 
+                    />
                     <AvatarFallback className="bg-secondary text-xs">
                       {booking.passenger.first_name[0]}
                       {booking.passenger.last_name[0]}
@@ -292,7 +363,19 @@ export default function RideDetails() {
               <p className="text-2xl font-bold text-primary">₪{ride.cost}</p>
               <p className="text-xs text-muted-foreground">per passenger</p>
             </div>
-            <Send className="h-8 w-8 text-primary" />
+            {ride.driver.bit_link ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 hover:bg-primary/10 rounded-full"
+                onClick={() => window.open(ride.driver.bit_link, "_blank")}
+                title="Pay with Bit"
+              >
+                <Send className="h-8 w-8 text-primary" />
+              </Button>
+            ) : (
+              <Send className="h-8 w-8 text-primary/50" />
+            )}
           </div>
         </Card>
 

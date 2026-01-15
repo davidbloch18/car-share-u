@@ -4,7 +4,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { RideCard } from "@/components/RideCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
@@ -30,11 +30,17 @@ export default function Home() {
     }
   }, [session, fetchRides]);
 
+  const handleManualRefresh = () => {
+    fetchRides();
+    toast({
+      description: "Rides refreshed",
+      duration: 1500,
+    });
+  };
 
   const getFilteredRides = () => {
     let filtered = rides;
 
-    // Apply time filter
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
@@ -50,7 +56,8 @@ export default function Home() {
       case "tomorrow":
         filtered = filtered.filter((ride) => {
           const rideDate = new Date(ride.departure_time);
-          return rideDate >= tomorrow && rideDate < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000);
+          const dayAfterTomorrow = new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000);
+          return rideDate >= tomorrow && rideDate < dayAfterTomorrow;
         });
         break;
       case "week":
@@ -64,7 +71,6 @@ export default function Home() {
         break;
     }
 
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(
         (ride) =>
@@ -87,17 +93,29 @@ export default function Home() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold mb-1">Available Rides</h1>
-            <p className="text-primary-foreground/90 text-sm">Find your next commute</p>
+            <p className="text-primary-foreground/90 text-sm">
+              Find your next commute
+            </p>
           </div>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Where are you going?"
-            className="pl-10 bg-background text-foreground border-0"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Where are you going?"
+              className="pl-10 bg-background text-foreground border-0"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button
+            size="icon"
+            onClick={handleManualRefresh}
+            title="Refresh rides"
+            className="shrink-0 bg-background text-foreground hover:bg-background/90"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
       </header>
 

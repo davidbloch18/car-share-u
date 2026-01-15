@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BottomNav } from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,33 @@ export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { session, signOut } = useAuthViewModel();
-  const { profile, isLoading, fetchProfile, updateProfile } = useProfileViewModel();
+  const { profile: fetchedProfile, isLoading, fetchProfile, updateProfile } = useProfileViewModel();
+
+  const profile = useMemo(() => fetchedProfile || (session?.user ? {
+    id: session.user.id,
+    first_name: session.user.user_metadata?.first_name || "",
+    last_name: session.user.user_metadata?.last_name || "",
+    email: session.user.email || "",
+    phone: "",
+    avatar_url: "",
+    is_verified: false,
+    rating_score: 0,
+    rating_count: 0,
+    bit_link: "",
+    gender: "",
+  } : null), [fetchedProfile, session?.user]);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     phone: "",
     bitLink: "",
+    gender: "",
   });
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   useEffect(() => {
     if (session === null) {
@@ -37,6 +58,7 @@ export default function Profile() {
         lastName: profile.last_name || "",
         phone: profile.phone || "",
         bitLink: profile.bit_link || "",
+        gender: profile.gender || "",
       });
     }
   }, [profile]);
@@ -50,6 +72,7 @@ export default function Profile() {
       last_name: formData.lastName,
       phone: formData.phone,
       bit_link: formData.bitLink,
+      gender: formData.gender,
     });
 
     if (error) {
@@ -74,7 +97,7 @@ export default function Profile() {
 
   if (!session) return null;
   
-  if (!profile) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
         <div className="text-center">
@@ -84,14 +107,22 @@ export default function Profile() {
     );
   }
 
+  if (!profile) return null;
+
   const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`;
+  const getAvatarUrl = () => {
+    if (profile.avatar_url) return profile.avatar_url;
+    if (profile.gender === 'male') return "https://avatar.iran.liara.run/public/boy";
+    if (profile.gender === 'female') return "https://avatar.iran.liara.run/public/girl";
+    return undefined;
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-primary text-primary-foreground p-6">
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20 border-4 border-primary-foreground">
-            <AvatarImage src={profile.avatar_url} />
+            <AvatarImage src={getAvatarUrl()} />
             <AvatarFallback className="bg-accent text-accent-foreground text-2xl">
               {initials}
             </AvatarFallback>
@@ -215,6 +246,25 @@ export default function Profile() {
                     setFormData({ ...formData, phone: e.target.value })
                   }
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, gender: value })
+                  }
+                  required
+                >
+                  <SelectTrigger id="gender">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

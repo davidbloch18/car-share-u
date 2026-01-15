@@ -20,13 +20,17 @@ export function useProfileViewModel() {
     return { data, error };
   }, [session]);
 
-  const updateProfile = useCallback(async (payload: { first_name?: string; last_name?: string; phone?: string | null; bit_link?: string | null }) => {
+  const updateProfile = useCallback(async (payload: { first_name?: string; last_name?: string; phone?: string | null; bit_link?: string | null; gender?: string }) => {
     if (!session?.user) return { error: new Error("Not authenticated") };
     setIsLoading(true);
     const { error } = await supabase
       .from("profiles")
-      .update(payload)
-      .eq("id", session.user.id);
+      .upsert({
+        id: session.user.id,
+        email: session.user.email ?? "",
+        ...payload,
+        updated_at: new Date().toISOString(),
+      });
     setIsLoading(false);
     if (!error) await fetchProfile();
     return { error };

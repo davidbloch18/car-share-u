@@ -5,8 +5,9 @@ import { BottomNav } from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import type { Session } from "@supabase/supabase-js";
 
@@ -152,10 +153,12 @@ export default function Bookings() {
               myRides.map((ride) => (
                 <Card
                   key={ride.id}
-                  className="p-4 cursor-pointer hover:shadow-lg transition-all"
-                  onClick={() => navigate(`/ride/${ride.id}`)}
+                  className="p-4"
                 >
-                  <div className="space-y-2">
+                  <div 
+                    className="space-y-2 cursor-pointer"
+                    onClick={() => navigate(`/ride/${ride.id}`)}
+                  >
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">{ride.destination}</h3>
                       <Badge
@@ -186,6 +189,21 @@ export default function Bookings() {
                         </span>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="pt-3 mt-3 border-t flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2 text-primary border-primary hover:bg-primary/5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate("/post-ride", { state: { repostRide: ride } });
+                      }}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Repost Ride
+                    </Button>
                   </div>
                 </Card>
               ))

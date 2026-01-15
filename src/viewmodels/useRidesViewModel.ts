@@ -17,7 +17,8 @@ export function useRidesViewModel() {
           last_name,
           avatar_url,
           rating_score,
-          rating_count
+          rating_count,
+          gender
         )
       `
       )
@@ -48,7 +49,10 @@ export function useRidesViewModel() {
           last_name,
           avatar_url,
           rating_score,
-          rating_count
+          rating_count,
+          gender,
+          phone,
+          bit_link
         )
       `
       )
@@ -67,6 +71,8 @@ export function useRidesViewModel() {
     seats_total: number;
     seats_available: number;
     cost: number;
+    pickup_points?: string[];
+    dropoff_points?: string[];
   }) => {
     setIsLoading(true);
     const { error } = await supabase.from("rides").insert(payload);
@@ -74,12 +80,14 @@ export function useRidesViewModel() {
     return { error };
   }, []);
 
-  const bookRide = useCallback(async (payload: { ride_id: string; passenger_id: string; currentSeats?: number }) => {
+  const bookRide = useCallback(async (payload: { ride_id: string; passenger_id: string; currentSeats?: number; pickup_point?: string; dropoff_point?: string }) => {
     setIsLoading(true);
     const { error: bookingError } = await supabase.from("bookings").insert({
       ride_id: payload.ride_id,
       passenger_id: payload.passenger_id,
       status: "confirmed",
+      pickup_point: payload.pickup_point,
+      dropoff_point: payload.dropoff_point
     });
 
     if (bookingError) {
@@ -90,18 +98,41 @@ export function useRidesViewModel() {
     // Decrement seats atomically using a safe update (ensure seats_available > 0)
     const { error: updateError } = await (supabase as any).rpc("decrement_seats", { ride_id_param: payload.ride_id });
 
-    // If rpc not present (older DB), fallback to simple update if currentSeats provided
+    // If rpc not present (older DB or network issue), ignore the error if fallback works, 
+    // OR if the error is "function not found" fallback to simple update.
+    // However, rpc is safer.
     if (updateError && typeof payload.currentSeats === "number") {
+      console.warn("RPC failed, falling back to client-side decrement:", updateError);
       const { error: fallbackError } = await supabase
         .from("rides")
         .update({ seats_available: payload.currentSeats - 1 })
         .eq("id", payload.ride_id);
+        
       setIsLoading(false);
-      return { error: fallbackError || updateError };
+      return { error: fallbackError };
     }
 
     setIsLoading(false);
     return { error: updateError };
+  }, []);
+
+  const updateRide = useCallback(async (rideId: string, payload: {
+    origin?: string;
+    destination?: string;
+    departure_time?: string;
+    seats_total?: number;
+    seats_available?: number;
+    cost?: number;
+    pickup_points?: string[];
+    dropoff_points?: string[];
+  }) => {
+    setIsLoading(true);
+    const { error } = await supabase
+      .from("rides")
+      .update(payload)
+      .eq("id", rideId);
+    setIsLoading(false);
+    return { error };
   }, []);
 
   const getBookings = useCallback(async (ride_id: string) => {
@@ -125,6 +156,7 @@ export function useRidesViewModel() {
     fetchRides,
     getRideById,
     createRide,
+    updateRide,
     bookRide,
     getBookings,
   } as const;

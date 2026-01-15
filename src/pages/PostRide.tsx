@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,20 +9,29 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BottomNav } from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, Info, Plus, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
 import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 
 export default function PostRide() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { session } = useAuthViewModel();
-  const { createRide } = useRidesViewModel();
+  const { createRide, updateRide } = useRidesViewModel();
   const [isLoading, setIsLoading] = useState(false);
   const [profilePhone, setProfilePhone] = useState<string | null>(null);
   const [profileBitLink, setProfileBitLink] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [pickupPoints, setPickupPoints] = useState<string[]>([]);
+  const [dropoffPoints, setDropoffPoints] = useState<string[]>([]);
+  const [newPickupPoint, setNewPickupPoint] = useState("");
+  const [newDropoffPoint, setNewDropoffPoint] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [rideId, setRideId] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     origin: "",
     destination: "",
@@ -34,6 +43,47 @@ export default function PostRide() {
     recurringEndDate: "",
     recurringDaysOfWeek: [] as number[], // 0 = Sunday, 6 = Saturday
   });
+
+  useEffect(() => {
+    // Check if we are editing (from Edit button in RideDetails) or Reposting (from Bookings)
+    if (location.state?.editRide) {
+      const ride = location.state.editRide;
+      setIsEditMode(true);
+      setRideId(ride.id);
+      
+      const date = new Date(ride.departure_time);
+      setFormData(prev => ({
+        ...prev,
+        origin: ride.origin,
+        destination: ride.destination,
+        seats: ride.seats_total.toString(),
+        cost: ride.cost.toString(),
+        departureDate: date.toISOString().split('T')[0],
+        departureTime: date.toTimeString().split(' ')[0].substring(0, 5)
+      }));
+      if (ride.pickup_points && Array.isArray(ride.pickup_points)) {
+        setPickupPoints(ride.pickup_points);
+      }
+      if (ride.dropoff_points && Array.isArray(ride.dropoff_points)) {
+        setDropoffPoints(ride.dropoff_points);
+      }
+    } else if (location.state?.repostRide) {
+      const ride = location.state.repostRide;
+      setFormData(prev => ({
+        ...prev,
+        origin: ride.origin,
+        destination: ride.destination,
+        seats: ride.seats_total.toString(),
+        cost: ride.cost.toString(),
+      }));
+      if (ride.pickup_points && Array.isArray(ride.pickup_points)) {
+        setPickupPoints(ride.pickup_points);
+      }
+      if (ride.dropoff_points && Array.isArray(ride.dropoff_points)) {
+        setDropoffPoints(ride.dropoff_points);
+      }
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (session === null) navigate("/auth");
@@ -132,6 +182,10 @@ export default function PostRide() {
     }
 
     setIsLoading(true);
+    
+    // Include any pending points locally in the submission
+    const finalPickupPoints = newPickupPoint.trim() ? [...pickupPoints, newPickupPoint.trim()] : pickupPoints;
+    const finalDropoffPoints = newDropoffPoint.trim() ? [...dropoffPoints, newDropoffPoint.trim()] : dropoffPoints;
 
     try {
       if (isRecurring) {
@@ -152,6 +206,8 @@ export default function PostRide() {
             seats_total: parseInt(formData.seats),
             seats_available: parseInt(formData.seats),
             cost: parseFloat(formData.cost),
+            pickup_points: finalPickupPoints,
+            dropoff_points: finalDropoffPoints,
           });
 
           if (!error) successCount++;
@@ -172,20 +228,38 @@ export default function PostRide() {
           });
         }
       } else {
-        // Single ride
+        // Single ride OR Update
         const departureDateTime = new Date(
           `${formData.departureDate}T${formData.departureTime}`
         ).toISOString();
 
-        const { error } = await createRide({
-          driver_id: session.user.id,
-          origin: formData.origin,
-          destination: formData.destination,
-          departure_time: departureDateTime,
-          seats_total: parseInt(formData.seats),
-          seats_available: parseInt(formData.seats),
-          cost: parseFloat(formData.cost),
-        });
+        let error;
+        
+        if (isEditMode && rideId) {
+           const result = await updateRide(rideId, {
+            origin: formData.origin,
+            destination: formData.destination,
+            departure_time: departureDateTime,
+            seats_total: parseInt(formData.seats),
+            cost: parseFloat(formData.cost),
+            pickup_points: finalPickupPoints,
+            dropoff_points: finalDropoffPoints,
+           });
+           error = result.error;
+        } else {
+           const result = await createRide({
+            driver_id: session.user.id,
+            origin: formData.origin,
+            destination: formData.destination,
+            departure_time: departureDateTime,
+            seats_total: parseInt(formData.seats),
+            seats_available: parseInt(formData.seats),
+            cost: parseFloat(formData.cost),
+            pickup_points: finalPickupPoints,
+            dropoff_points: finalDropoffPoints,
+           });
+           error = result.error;
+        }
 
         setIsLoading(false);
 
@@ -197,10 +271,14 @@ export default function PostRide() {
           });
         } else {
           toast({
-            title: "Ride Posted!",
-            description: "Your ride has been published successfully.",
+            title: isEditMode ? "Ride Updated!" : "Ride Posted!",
+            description: isEditMode ? "Your ride has been updated." : "Your ride has been published successfully.",
           });
-          navigate("/home");
+          if (isEditMode) {
+            navigate(`/ride/${rideId}`);
+          } else {
+            navigate("/home");
+          }
         }
       }
     } catch (err) {
@@ -266,7 +344,7 @@ export default function PostRide() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold">Post a Ride</h1>
+        <h1 className="text-xl font-bold">{isEditMode ? "Edit Ride" : "Post a Ride"}</h1>
       </header>
 
       <main className="p-4">
@@ -277,10 +355,10 @@ export default function PostRide() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="origin">Pickup Location</Label>
+                <Label htmlFor="origin">From (General Area)</Label>
                 <Input
                   id="origin"
-                  placeholder="e.g., Tel Aviv Central Station"
+                  placeholder="e.g., Tel Aviv"
                   value={formData.origin}
                   onChange={(e) =>
                     setFormData({ ...formData, origin: e.target.value })
@@ -289,17 +367,173 @@ export default function PostRide() {
                 />
               </div>
 
+              {/* Specific Pickup Points */}
               <div className="space-y-2">
-                <Label htmlFor="destination">Destination</Label>
+                <Label>Specific Pickup Points (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add a specific pickup point..."
+                    value={newPickupPoint}
+                    onChange={(e) => setNewPickupPoint(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newPickupPoint.trim()) {
+                          setPickupPoints([...pickupPoints, newPickupPoint.trim()]);
+                          setNewPickupPoint("");
+                        }
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => {
+                      if (newPickupPoint.trim()) {
+                        setPickupPoints([...pickupPoints, newPickupPoint.trim()]);
+                        setNewPickupPoint("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {pickupPoints.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {pickupPoints.map((point, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
+                        <span className="mr-1">{point}</span>
+                        <div className="flex items-center gap-0.5">
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPoints = [...pickupPoints];
+                                [newPoints[index - 1], newPoints[index]] = [newPoints[index], newPoints[index - 1]];
+                                setPickupPoints(newPoints);
+                              }}
+                              className="hover:bg-secondary-foreground/10 rounded p-0.5"
+                            >
+                              <ChevronUp className="h-3 w-3" />
+                            </button>
+                          )}
+                          {index < pickupPoints.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPoints = [...pickupPoints];
+                                [newPoints[index], newPoints[index + 1]] = [newPoints[index + 1], newPoints[index]];
+                                setPickupPoints(newPoints);
+                              }}
+                              className="hover:bg-secondary-foreground/10 rounded p-0.5"
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setPickupPoints(pickupPoints.filter((_, i) => i !== index))}
+                            className="hover:bg-secondary-foreground/10 rounded p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="destination">To (General Area)</Label>
                 <Input
                   id="destination"
-                  placeholder="e.g., Jerusalem University"
+                  placeholder="e.g., Jerusalem"
                   value={formData.destination}
                   onChange={(e) =>
                     setFormData({ ...formData, destination: e.target.value })
                   }
                   required
                 />
+              </div>
+
+              {/* Specific Dropoff Points */}
+              <div className="space-y-2">
+                <Label>Specific Dropoff Points (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add a specific dropoff point..."
+                    value={newDropoffPoint}
+                    onChange={(e) => setNewDropoffPoint(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newDropoffPoint.trim()) {
+                          setDropoffPoints([...dropoffPoints, newDropoffPoint.trim()]);
+                          setNewDropoffPoint("");
+                        }
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => {
+                      if (newDropoffPoint.trim()) {
+                        setDropoffPoints([...dropoffPoints, newDropoffPoint.trim()]);
+                        setNewDropoffPoint("");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {dropoffPoints.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {dropoffPoints.map((point, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
+                        <span className="mr-1">{point}</span>
+                        <div className="flex items-center gap-0.5">
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPoints = [...dropoffPoints];
+                                [newPoints[index - 1], newPoints[index]] = [newPoints[index], newPoints[index - 1]];
+                                setDropoffPoints(newPoints);
+                              }}
+                              className="hover:bg-secondary-foreground/10 rounded p-0.5"
+                            >
+                              <ChevronUp className="h-3 w-3" />
+                            </button>
+                          )}
+                          {index < dropoffPoints.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPoints = [...dropoffPoints];
+                                [newPoints[index], newPoints[index + 1]] = [newPoints[index + 1], newPoints[index]];
+                                setDropoffPoints(newPoints);
+                              }}
+                              className="hover:bg-secondary-foreground/10 rounded p-0.5"
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setDropoffPoints(dropoffPoints.filter((_, i) => i !== index))}
+                            className="hover:bg-secondary-foreground/10 rounded p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
