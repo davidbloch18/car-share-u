@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://excupctzowutbfxxcymf.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4Y3VwY3R6b3d1dGJmeHhjeW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2ODA3MjMsImV4cCI6MjA3ODI1NjcyM30.VbNxHWmBs5GBjpsvAjT0vFgkY-R6QKBs-Cm-7jSCzYA';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ssbubxulfxqcthivdtuo.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzYnVieHVsZnhxY3RoaXZkdHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxNzUyMzAsImV4cCI6MjA4Mjc1MTIzMH0.gOSLAJfwoMT6Jbw20Rkn_YZ0-VHM7azxcIsUXyUYgso';
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   throw new Error('Missing Supabase environment variables');
