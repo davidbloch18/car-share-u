@@ -23,6 +23,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/callback" element={<Auth />} />
           <Route path="/home" element={<Home />} />
           <Route path="/post-ride" element={<PostRide />} />
           <Route path="/ride/:id" element={<RideDetails />} />

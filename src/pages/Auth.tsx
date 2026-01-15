@@ -29,7 +29,17 @@ export default function Auth() {
     if (resetToken === 'true') {
       setShowResetPassword(true);
     }
-  }, [searchParams]);
+    
+    // Check if user is coming from email confirmation
+    const confirmationType = searchParams.get('type');
+    if (confirmationType === 'signup' || confirmationType === 'email') {
+      toast({
+        title: "Email Confirmed!",
+        description: "Your email has been verified. You can now sign in to your account.",
+        duration: 5000,
+      });
+    }
+  }, [searchParams, toast]);
 
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -108,7 +118,7 @@ export default function Auth() {
       password: signUpData.password,
       firstName: signUpData.firstName,
       lastName: signUpData.lastName,
-      redirectTo: `${window.location.origin}/home`,
+      redirectTo: `${window.location.origin}/auth/callback?type=signup`,
     });
     setIsLoading(null);
 
@@ -121,9 +131,11 @@ export default function Auth() {
     } else {
       toast({
         title: "Welcome to Ride-Share U!",
-        description: "Your account has been created successfully.",
+        description: "Please check your email to confirm your account. You can sign in after confirmation.",
+        duration: 7000,
       });
-      navigate("/home");
+      // Don't navigate to home - user needs to confirm email first
+      // Show the sign in tab instead
     }
   };
 

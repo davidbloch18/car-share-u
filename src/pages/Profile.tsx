@@ -74,9 +74,19 @@ export default function Profile() {
     navigate("/auth");
   };
 
-  if (!session || !profile) return null;
+  if (!session) return null;
+  
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const initials = `${profile.first_name[0]}${profile.last_name[0]}`;
+  const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`;
 
   return (
     <div className="min-h-screen bg-background pb-20">
