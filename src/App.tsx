@@ -11,6 +11,7 @@ import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,12 +25,12 @@ const App = () => (
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/callback" element={<Auth />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/post-ride" element={<PostRide />} />
-          <Route path="/ride/:id" element={<RideDetails />} />
-          <Route path="/bookings" element={<Bookings />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
+          <Route path="/post-ride" element={<ProtectedRoute element={<PostRide />} />} />
+          <Route path="/ride/:id" element={<ProtectedRoute element={<RideDetails />} />} />
+          <Route path="/bookings" element={<ProtectedRoute element={<Bookings />} />} />
+          <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+          <Route path="/notifications" element={<ProtectedRoute element={<Notifications />} />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
