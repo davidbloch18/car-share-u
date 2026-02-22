@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Car } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { IsraeliAcademicDomains } from "@/lib/israeliAcademicDomains";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,8 +35,8 @@ export default function Auth() {
     const confirmationType = searchParams.get('type');
     if (confirmationType === 'signup' || confirmationType === 'email') {
       toast({
-        title: "Email Confirmed!",
-        description: "Your email has been verified. You can now sign in to your account.",
+        title: "האימייל אומת!",
+        description: "האימייל שלך אומת בהצלחה. כעת ניתן להתחבר לחשבון.",
         duration: 5000,
       });
     }
@@ -49,9 +50,16 @@ export default function Auth() {
     lastName: "",
   });
 
-  const [signInData, setSignInData] = useState({
-    email: "",
-    password: "",
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem("rememberMe") === "true";
+  });
+
+  const [signInData, setSignInData] = useState(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail") || "";
+    return {
+      email: savedEmail,
+      password: "",
+    };
   });
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -63,8 +71,8 @@ export default function Auth() {
     // Validate first and last names
     if (!nameRegex.test(signUpData.firstName) || !nameRegex.test(signUpData.lastName)) {
       toast({
-        title: "Invalid Name",
-        description: "First and last names must be 1–20 letters (A–Z only).",
+        title: "שם לא תקין",
+        description: "שם פרטי ושם משפחה חייבים להכיל 1-20 אותיות באנגלית בלבד (A-Z).",
         variant: "destructive",
       });
       return;
@@ -75,8 +83,8 @@ export default function Auth() {
     // Validate that email contains exactly one "@"
     if (!localPart || !domain) {
       toast({
-        title: "Invalid Email Format",
-        description: "Email must contain a single @ symbol.",
+        title: "פורמט אימייל לא תקין",
+        description: "האימייל חייב להכיל סימן @ אחד.",
         variant: "destructive",
       });
       return;
@@ -85,9 +93,9 @@ export default function Auth() {
     const localPartRegex = /^[A-Za-z0-9._%+-]{1,25}$/;
     if (!localPartRegex.test(localPart)) {
       toast({
-        title: "Invalid Email Username",
+        title: "שם משתמש אימייל לא תקין",
         description:
-          "The part before @ must be 1–25 characters and contain only English letters, numbers, and . _ % + -",
+          "החלק לפני @ חייב להכיל 1-25 תווים ולכלול רק אותיות באנגלית, מספרים ותווים . _ % + -",
         variant: "destructive",
       });
       return;
@@ -95,8 +103,8 @@ export default function Auth() {
     // Allow gmail.com for testing purposes
     if (!IsraeliAcademicDomains.includes(domain) && domain !== "gmail.com") {
       toast({
-        title: "Unrecognized Academic Institution",
-        description: "Please use an email from a recognized Israeli university or college.",
+        title: "מוסד אקדמי לא מזוהה",
+        description: "יש להשתמש באימייל ממוסד אקדמי ישראלי מוכר.",
         variant: "destructive",
       });
       return;
@@ -104,8 +112,8 @@ export default function Auth() {
 
     if (signUpData.password !== signUpData.confirmPassword) {
       toast({
-        title: "Passwords Do Not Match",
-        description: "Please make sure both password fields are identical.",
+        title: "הסיסמאות לא תואמות",
+        description: "יש לוודא ששני שדות הסיסמה זהים.",
         variant: "destructive",
       });
       return;
@@ -124,14 +132,14 @@ export default function Auth() {
 
     if (error) {
       toast({
-        title: "Sign Up Failed",
+        title: "ההרשמה נכשלה",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Welcome to Ride-Share U!",
-        description: "Please check your email to confirm your account. You can sign in after confirmation.",
+        title: "!ברוכים הבאים ל-Ride-Share U",
+        description: "נא לבדוק את האימייל כדי לאשר את החשבון. ניתן להתחבר לאחר האישור.",
         duration: 7000,
       });
       // Don't navigate to home - user needs to confirm email first
@@ -151,11 +159,19 @@ export default function Auth() {
 
     if (error) {
       toast({
-        title: "Sign In Failed",
+        title: "ההתחברות נכשלה",
         description: error.message,
         variant: "destructive",
       });
     } else {
+      // Save or clear remembered email based on "Remember Me" checkbox
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("rememberedEmail", signInData.email);
+      } else {
+        localStorage.removeItem("rememberMe");
+        localStorage.removeItem("rememberedEmail");
+      }
       navigate("/home");
     }
   };
@@ -169,14 +185,14 @@ export default function Auth() {
 
     if (error) {
       toast({
-        title: "Reset Failed",
+        title: "האיפוס נכשל",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Check Your Email",
-        description: "We've sent you a password reset link. Please check your email.",
+        title: "בדוק את האימייל",
+        description: "שלחנו לך קישור לאיפוס סיסמה. נא לבדוק את תיבת הדואר.",
       });
       setShowForgotPassword(false);
       setResetEmail("");
@@ -188,8 +204,8 @@ export default function Auth() {
     
     if (newPassword !== confirmNewPassword) {
       toast({
-        title: "Passwords Don't Match",
-        description: "Please make sure both password fields are identical.",
+        title: "הסיסמאות לא תואמות",
+        description: "יש לוודא ששני שדות הסיסמה זהים.",
         variant: "destructive",
       });
       return;
@@ -197,8 +213,8 @@ export default function Auth() {
 
     if (newPassword.length < 6) {
       toast({
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters long.",
+        title: "סיסמה קצרה מדי",
+        description: "הסיסמה חייבת להכיל לפחות 6 תווים.",
         variant: "destructive",
       });
       return;
@@ -210,14 +226,14 @@ export default function Auth() {
 
     if (error) {
       toast({
-        title: "Update Failed",
+        title: "העדכון נכשל",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Password Updated",
-        description: "Your password has been updated successfully. You can now sign in.",
+        title: "הסיסמה עודכנה",
+        description: "הסיסמה עודכנה בהצלחה. כעת ניתן להתחבר.",
       });
       setShowResetPassword(false);
       setNewPassword("");
@@ -236,14 +252,14 @@ export default function Auth() {
             Ride-Share U
           </CardTitle>
           <CardDescription>
-            {showResetPassword ? "Reset Your Password" : "Community carpooling for university students"}
+            {showResetPassword ? "איפוס סיסמה" : "שיתוף נסיעות לסטודנטים"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {showResetPassword ? (
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
+                <Label htmlFor="new-password">סיסמה חדשה</Label>
                 <Input
                   id="new-password"
                   type="password"
@@ -254,7 +270,7 @@ export default function Auth() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                <Label htmlFor="confirm-new-password">אימות סיסמה חדשה</Label>
                 <Input
                   id="confirm-new-password"
                   type="password"
@@ -268,21 +284,21 @@ export default function Auth() {
                 className="w-full bg-primary hover:bg-primary-hover"
                 disabled={isLoading === "updatePassword"}
               >
-                {isLoading === "updatePassword" ? "Updating..." : "Update Password"}
+                {isLoading === "updatePassword" ? "מעדכן..." : "עדכן סיסמה"}
               </Button>
             </form>
           ) : (
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin">התחברות</TabsTrigger>
+              <TabsTrigger value="signup">הרשמה</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
               {!showForgotPassword ? (
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">אימייל</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -295,7 +311,7 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">סיסמה</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -306,12 +322,22 @@ export default function Auth() {
                       required
                     />
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <Label htmlFor="remember-me" className="text-sm cursor-pointer">
+                      זכור אותי
+                    </Label>
+                  </div>
                   <Button
                     type="submit"
                     className="w-full bg-primary hover:bg-primary-hover"
                     disabled={isLoading === "signin"}
                   >
-                    {isLoading === "signin" ? "Signing in..." : "Sign In"}
+                    {isLoading === "signin" ? "מתחבר..." : "התחבר"}
                   </Button>
                   <Button
                     type="button"
@@ -319,13 +345,13 @@ export default function Auth() {
                     className="w-full text-sm text-primary"
                     onClick={() => setShowForgotPassword(true)}
                   >
-                    Forgot Password?
+                    שכחת סיסמה?
                   </Button>
                 </form>
               ) : (
                 <form onSubmit={handleResetPassword} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
+                    <Label htmlFor="reset-email">אימייל</Label>
                     <Input
                       id="reset-email"
                       type="email"
@@ -335,7 +361,7 @@ export default function Auth() {
                       required
                     />
                     <p className="text-xs text-muted-foreground">
-                      Enter your email to receive a password reset link
+                      הזן את האימייל שלך כדי לקבל קישור לאיפוס סיסמה
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -348,14 +374,14 @@ export default function Auth() {
                         setResetEmail("");
                       }}
                     >
-                      Back
+                      חזרה
                     </Button>
                     <Button
                       type="submit"
                       className="flex-1 bg-primary hover:bg-primary-hover"
                       disabled={isLoading === "reset"}
                     >
-                      {isLoading === "reset" ? "Sending..." : "Send Reset Link"}
+                      {isLoading === "reset" ? "שולח..." : "שלח קישור איפוס"}
                     </Button>
                   </div>
                 </form>
@@ -366,7 +392,7 @@ export default function Auth() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="first-name">First Name</Label>
+                    <Label htmlFor="first-name">שם פרטי</Label>
                     <Input
                       id="first-name"
                       value={signUpData.firstName}
@@ -377,7 +403,7 @@ export default function Auth() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="last-name">Last Name</Label>
+                    <Label htmlFor="last-name">שם משפחה</Label>
                     <Input
                       id="last-name"
                       value={signUpData.lastName}
@@ -389,7 +415,7 @@ export default function Auth() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">University Email</Label>
+                  <Label htmlFor="signup-email">אימייל אקדמי</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -401,11 +427,11 @@ export default function Auth() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must be a valid Israeli academic email address (instituite.ac.il)
+                    חייב להיות אימייל ממוסד אקדמי ישראלי (institute.ac.il)
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">סיסמה</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -418,7 +444,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Label htmlFor="signup-confirm-password">אימות סיסמה</Label>
                   <Input
                     id="signup-confirm-password"
                     type="password"
@@ -434,7 +460,7 @@ export default function Auth() {
                   className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
                   disabled={isLoading === "signup"}
                 >
-                  {isLoading === "signup" ? "Creating account..." : "Sign Up"}
+                  {isLoading === "signup" ? "יוצר חשבון..." : "הרשמה"}
                 </Button>
               </form>
             </TabsContent>

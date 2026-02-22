@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Clock, Users, CheckCircle2, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { getGenderIcon } from "@/components/GenderAvatar";
 
 import { useNavigate } from "react-router-dom";
 
@@ -36,9 +37,7 @@ export function RideCard({ ride }: RideCardProps) {
 
   const getAvatarUrl = () => {
     if (ride.driver.avatar_url) return ride.driver.avatar_url;
-    if (ride.driver.gender === 'male') return "https://avatar.iran.liara.run/public/boy";
-    if (ride.driver.gender === 'female') return "https://avatar.iran.liara.run/public/girl";
-    return undefined;
+    return getGenderIcon(ride.driver.gender);
   };
 
   const handleCardClick = () => navigate(`/ride/${ride.id}`);
@@ -77,14 +76,14 @@ export function RideCard({ ride }: RideCardProps) {
               </h3>
               {ride.driver.is_verified && (
                 <Badge className="mt-0.5 bg-primary/10 text-primary border-0 text-xs px-2 py-0">
-                  Verified Student
+                  סטודנט מאומת
                 </Badge>
               )}
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-left">
             <div className="text-xl font-bold text-primary">₪{ride.cost}</div>
-            <div className="text-xs text-muted-foreground">per seat</div>
+            <div className="text-xs text-muted-foreground">למושב</div>
           </div>
         </div>
 
@@ -103,7 +102,7 @@ export function RideCard({ ride }: RideCardProps) {
             </div>
           </div>
           {((ride.pickup_points && ride.pickup_points.length > 0) || (ride.dropoff_points && ride.dropoff_points.length > 0)) && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-6 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-6 flex-wrap">
               {ride.pickup_points && ride.pickup_points.length > 0 && (
                 <>
                   {ride.pickup_points.map((point, idx) => (
@@ -134,7 +133,7 @@ export function RideCard({ ride }: RideCardProps) {
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
           <div className="flex items-center gap-2.5">
             <Users className="h-4 w-4 shrink-0" />
-            <span className="font-medium">{ride.seats_available} seats left</span>
+            <span className="font-medium">{ride.seats_available} מקומות פנויים</span>
           </div>
         </div>
 
@@ -142,7 +141,7 @@ export function RideCard({ ride }: RideCardProps) {
           className="w-full bg-[hsl(14,100%,57%)] hover:bg-[hsl(14,100%,50%)] text-white font-semibold h-11 text-base rounded-lg"
           onClick={handleJoinClick}
         >
-          Join Ride
+          הצטרף לנסיעה
 
         </Button>
       </CardContent>

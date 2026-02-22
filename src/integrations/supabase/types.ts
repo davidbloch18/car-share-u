@@ -18,24 +18,30 @@ export type Database = {
         Row: {
           booking_time: string
           created_at: string
+          dropoff_point: string | null
           id: string
           passenger_id: string
+          pickup_point: string | null
           ride_id: string
           status: string
         }
         Insert: {
           booking_time?: string
           created_at?: string
+          dropoff_point?: string | null
           id?: string
           passenger_id: string
+          pickup_point?: string | null
           ride_id: string
           status?: string
         }
         Update: {
           booking_time?: string
           created_at?: string
+          dropoff_point?: string | null
           id?: string
           passenger_id?: string
+          pickup_point?: string | null
           ride_id?: string
           status?: string
         }
@@ -63,6 +69,7 @@ export type Database = {
           created_at: string
           email: string
           first_name: string
+          gender: string | null
           id: string
           is_verified: boolean
           last_name: string
@@ -77,6 +84,7 @@ export type Database = {
           created_at?: string
           email: string
           first_name: string
+          gender?: string | null
           id: string
           is_verified?: boolean
           last_name: string
@@ -91,6 +99,7 @@ export type Database = {
           created_at?: string
           email?: string
           first_name?: string
+          gender?: string | null
           id?: string
           is_verified?: boolean
           last_name?: string
@@ -160,12 +169,16 @@ export type Database = {
           departure_time: string
           destination: string
           driver_id: string
+          dropoff_points: string[] | null
           id: string
           origin: string
+          pickup_points: string[] | null
           seats_available: number
           seats_total: number
           status: string
           updated_at: string
+          vehicle_color: string | null
+          vehicle_model: string | null
         }
         Insert: {
           cost: number
@@ -173,12 +186,16 @@ export type Database = {
           departure_time: string
           destination: string
           driver_id: string
+          dropoff_points?: string[] | null
           id?: string
           origin: string
+          pickup_points?: string[] | null
           seats_available: number
           seats_total: number
           status?: string
           updated_at?: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
         }
         Update: {
           cost?: number
@@ -186,12 +203,16 @@ export type Database = {
           departure_time?: string
           destination?: string
           driver_id?: string
+          dropoff_points?: string[] | null
           id?: string
           origin?: string
+          pickup_points?: string[] | null
           seats_available?: number
           seats_total?: number
           status?: string
           updated_at?: string
+          vehicle_color?: string | null
+          vehicle_model?: string | null
         }
         Relationships: [
           {

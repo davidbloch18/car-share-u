@@ -9,31 +9,21 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, MapPin, Users, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
-import type { Session } from "@supabase/supabase-js";
+import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
 
 export default function Bookings() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [session, setSession] = useState<Session | null>(null);
+  const { session } = useAuthViewModel();
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [myRides, setMyRides] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) navigate("/auth");
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (!session) navigate("/auth");
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session === null) {
+      navigate("/auth");
+    }
+  }, [session, navigate]);
 
   useEffect(() => {
     if (session) {
@@ -80,24 +70,24 @@ export default function Bookings() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-primary text-primary-foreground p-6">
-        <h1 className="text-2xl font-bold">My Trips</h1>
+        <h1 className="text-2xl font-bold">הנסיעות שלי</h1>
       </header>
 
       <main className="p-4">
         <Tabs defaultValue="bookings">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="bookings">As Passenger</TabsTrigger>
-            <TabsTrigger value="rides">As Driver</TabsTrigger>
+            <TabsTrigger value="bookings">כנוסע</TabsTrigger>
+            <TabsTrigger value="rides">כנהג</TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings" className="space-y-4 mt-4">
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">
-                Loading bookings...
+                טוען הזמנות...
               </div>
             ) : myBookings.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No bookings yet
+                אין הזמנות עדיין
               </div>
             ) : (
               myBookings.map((booking) => (
@@ -113,7 +103,7 @@ export default function Bookings() {
                         {booking.ride.driver.last_name}
                       </h3>
                       <Badge className="bg-success-light text-success border-success">
-                        Confirmed
+                        מאושר
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -143,11 +133,11 @@ export default function Bookings() {
           <TabsContent value="rides" className="space-y-4 mt-4">
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">
-                Loading rides...
+                טוען נסיעות...
               </div>
             ) : myRides.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No rides posted yet
+                לא פורסמו נסיעות עדיין
               </div>
             ) : (
               myRides.map((ride) => (
@@ -202,7 +192,7 @@ export default function Bookings() {
                       }}
                     >
                       <RefreshCw className="h-3 w-3" />
-                      Repost Ride
+                      פרסם מחדש
                     </Button>
                   </div>
                 </Card>

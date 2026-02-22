@@ -14,6 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
 import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
+import { DatePicker } from "@/components/ui/date-picker";
+import { ScrollTimePicker } from "@/components/ui/scroll-time-picker";
+import { SeatPicker } from "@/components/ui/seat-picker";
+import { PricePicker } from "@/components/ui/price-picker";
 
 export default function PostRide() {
   const navigate = useNavigate();
@@ -115,8 +119,8 @@ export default function PostRide() {
     if (!profilePhone || !profileBitLink) {
       setIsLoading(false);
       toast({
-        title: "Profile incomplete",
-        description: "You must add a phone number and a Bit payment link to your profile before posting a ride.",
+        title: "הפרופיל לא הושלם",
+        description: "יש להוסיף מספר טלפון וקישור תשלום Bit לפרופיל לפני פרסום נסיעה.",
         variant: "destructive",
       });
       return;
@@ -134,8 +138,8 @@ export default function PostRide() {
     if (selectedDate < todayDate || selectedDate > maxDate) {
       setIsLoading(false);
       toast({
-        title: "Invalid date",
-        description: "Departure date must be within 1 month from today.",
+        title: "תאריך לא תקין",
+        description: "תאריך היציאה חייב להיות תוך חודש מהיום.",
         variant: "destructive",
       });
       return;
@@ -145,8 +149,8 @@ export default function PostRide() {
     if (isRecurring) {
       if (!formData.recurringEndDate) {
         toast({
-          title: "Missing end date",
-          description: "Please select an end date for recurring rides.",
+          title: "חסר תאריך סיום",
+          description: "נא לבחור תאריך סיום לנסיעות חוזרות.",
           variant: "destructive",
         });
         return;
@@ -155,8 +159,8 @@ export default function PostRide() {
       const endDate = new Date(formData.recurringEndDate + "T00:00:00");
       if (endDate <= selectedDate) {
         toast({
-          title: "Invalid end date",
-          description: "End date must be after the first ride date.",
+          title: "תאריך סיום לא תקין",
+          description: "תאריך הסיום חייב להיות אחרי תאריך הנסיעה הראשונה.",
           variant: "destructive",
         });
         return;
@@ -164,8 +168,8 @@ export default function PostRide() {
 
       if (endDate > maxDate) {
         toast({
-          title: "End date too far",
-          description: "Recurring rides cannot extend beyond 1 month.",
+          title: "תאריך סיום רחוק מדי",
+          description: "נסיעות חוזרות לא יכולות לחרוג מעבר לחודש אחד.",
           variant: "destructive",
         });
         return;
@@ -173,8 +177,8 @@ export default function PostRide() {
 
       if (formData.recurringFrequency === "weekly" && formData.recurringDaysOfWeek.length === 0) {
         toast({
-          title: "No days selected",
-          description: "Please select at least one day of the week for weekly recurring rides.",
+          title: "לא נבחרו ימים",
+          description: "יש לבחור לפחות יום אחד בשבוע לנסיעות שבועיות.",
           variant: "destructive",
         });
         return;
@@ -216,14 +220,14 @@ export default function PostRide() {
         setIsLoading(false);
         if (successCount > 0) {
           toast({
-            title: "Recurring Rides Posted!",
-            description: `Successfully created ${successCount} ride${successCount > 1 ? 's' : ''}.`,
+            title: "נסיעות חוזרות פורסמו!",
+            description: `נוצרו ${successCount} נסיעות בהצלחה.`,
           });
           navigate("/home");
         } else {
           toast({
-            title: "Error",
-            description: "Failed to create recurring rides.",
+            title: "שגיאה",
+            description: "יצירת נסיעות חוזרות נכשלה.",
             variant: "destructive",
           });
         }
@@ -265,14 +269,14 @@ export default function PostRide() {
 
         if (error) {
           toast({
-            title: "Error",
+            title: "שגיאה",
             description: error.message,
             variant: "destructive",
           });
         } else {
           toast({
-            title: isEditMode ? "Ride Updated!" : "Ride Posted!",
-            description: isEditMode ? "Your ride has been updated." : "Your ride has been published successfully.",
+            title: isEditMode ? "הנסיעה עודכנה!" : "הנסיעה פורסמה!",
+            description: isEditMode ? "הנסיעה שלך עודכנה." : "הנסיעה שלך פורסמה בהצלחה.",
           });
           if (isEditMode) {
             navigate(`/ride/${rideId}`);
@@ -284,8 +288,8 @@ export default function PostRide() {
     } catch (err) {
       setIsLoading(false);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
+        title: "שגיאה",
+        description: "אירעה שגיאה בלתי צפויה.",
         variant: "destructive",
       });
     }
@@ -330,8 +334,8 @@ export default function PostRide() {
   const maxDateStr = maxDateObj.toISOString().split("T")[0];
 
   const missing: string[] = [];
-  if (!profilePhone) missing.push("phone number");
-  if (!profileBitLink) missing.push("Bit payment link");
+  if (!profilePhone) missing.push("מספר טלפון");
+  if (!profileBitLink) missing.push("קישור תשלום Bit");
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -344,21 +348,21 @@ export default function PostRide() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-xl font-bold">{isEditMode ? "Edit Ride" : "Post a Ride"}</h1>
+        <h1 className="text-xl font-bold">{isEditMode ? "עריכת נסיעה" : "פרסום נסיעה"}</h1>
       </header>
 
       <main className="p-4">
         <Card>
           <CardHeader>
-            <CardTitle>Ride Details</CardTitle>
+            <CardTitle>פרטי הנסיעה</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="origin">From (General Area)</Label>
+                <Label htmlFor="origin">מאיפה (אזור כללי)</Label>
                 <Input
                   id="origin"
-                  placeholder="e.g., Tel Aviv"
+                  placeholder="למשל: תל אביב"
                   value={formData.origin}
                   onChange={(e) =>
                     setFormData({ ...formData, origin: e.target.value })
@@ -369,13 +373,13 @@ export default function PostRide() {
 
               {/* Specific Pickup Points */}
               <div className="space-y-2">
-                <Label>Specific Pickup Points (Optional)</Label>
+                <Label>נקודות איסוף ספציפיות (אופציונלי)</Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Add a specific pickup point..."
+                    placeholder="הוסף נקודת איסוף ספציפית..."
                     value={newPickupPoint}
                     onChange={(e) => setNewPickupPoint(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         if (newPickupPoint.trim()) {
@@ -402,8 +406,8 @@ export default function PostRide() {
                 {pickupPoints.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {pickupPoints.map((point, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
-                        <span className="mr-1">{point}</span>
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 pl-1">
+                        <span className="ml-1">{point}</span>
                         <div className="flex items-center gap-0.5">
                           {index > 0 && (
                             <button
@@ -446,10 +450,10 @@ export default function PostRide() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="destination">To (General Area)</Label>
+                <Label htmlFor="destination">לאיפה (אזור כללי)</Label>
                 <Input
                   id="destination"
-                  placeholder="e.g., Jerusalem"
+                  placeholder="למשל: ירושלים"
                   value={formData.destination}
                   onChange={(e) =>
                     setFormData({ ...formData, destination: e.target.value })
@@ -460,13 +464,13 @@ export default function PostRide() {
 
               {/* Specific Dropoff Points */}
               <div className="space-y-2">
-                <Label>Specific Dropoff Points (Optional)</Label>
+                <Label>נקודות הורדה ספציפיות (אופציונלי)</Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Add a specific dropoff point..."
+                    placeholder="הוסף נקודת הורדה ספציפית..."
                     value={newDropoffPoint}
                     onChange={(e) => setNewDropoffPoint(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         if (newDropoffPoint.trim()) {
@@ -493,8 +497,8 @@ export default function PostRide() {
                 {dropoffPoints.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {dropoffPoints.map((point, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
-                        <span className="mr-1">{point}</span>
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 pl-1">
+                        <span className="ml-1">{point}</span>
                         <div className="flex items-center gap-0.5">
                           {index > 0 && (
                             <button
@@ -538,29 +542,23 @@ export default function PostRide() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
+                  <Label htmlFor="date">תאריך</Label>
+                  <DatePicker
                     value={formData.departureDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, departureDate: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, departureDate: val })
                     }
                     min={todayStr}
                     max={maxDateStr}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="time">Time</Label>
-                  <Input
-                    id="time"
-                    type="time"
+                  <Label htmlFor="time">שעה</Label>
+                  <ScrollTimePicker
                     value={formData.departureTime}
-                    onChange={(e) =>
-                      setFormData({ ...formData, departureTime: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, departureTime: val })
                     }
-                    required
                   />
                 </div>
               </div>
@@ -574,19 +572,19 @@ export default function PostRide() {
                     onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
                   />
                   <Label htmlFor="recurring" className="cursor-pointer font-medium">
-                    Make this a recurring ride
+                    הפוך לנסיעה חוזרת
                   </Label>
                 </div>
 
                 {isRecurring && (
-                  <div className="space-y-4 pl-6 border-l-2 border-primary/20">
+                  <div className="space-y-4 pr-6 border-r-2 border-primary/20">
                     <div className="flex items-start gap-2 text-sm text-muted-foreground">
                       <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <p>Create multiple rides automatically based on your schedule</p>
+                      <p>צור מספר נסיעות אוטומטית לפי לוח הזמנים שלך</p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="frequency">Frequency</Label>
+                      <Label htmlFor="frequency">תדירות</Label>
                       <Select
                         value={formData.recurringFrequency}
                         onValueChange={(value: "daily" | "weekly") =>
@@ -597,17 +595,17 @@ export default function PostRide() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="daily">יומי</SelectItem>
+                          <SelectItem value="weekly">שבועי</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {formData.recurringFrequency === "weekly" && (
                       <div className="space-y-2">
-                        <Label>Select Days</Label>
+                        <Label>בחר ימים</Label>
                         <div className="grid grid-cols-7 gap-2">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+                          {["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"].map((day, index) => (
                             <Button
                               key={day}
                               type="button"
@@ -624,55 +622,42 @@ export default function PostRide() {
                     )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="endDate">End Date</Label>
-                      <Input
-                        id="endDate"
-                        type="date"
+                      <Label htmlFor="endDate">תאריך סיום</Label>
+                      <DatePicker
                         value={formData.recurringEndDate}
-                        onChange={(e) =>
-                          setFormData({ ...formData, recurringEndDate: e.target.value })
+                        onChange={(val) =>
+                          setFormData({ ...formData, recurringEndDate: val })
                         }
                         min={formData.departureDate || todayStr}
                         max={maxDateStr}
-                        required={isRecurring}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Rides will be created until this date (max 1 month)
+                        נסיעות ייוצרו עד תאריך זה (מקסימום חודש)
                       </p>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="seats">Available Seats</Label>
-                  <Input
-                    id="seats"
-                    type="number"
-                    min="1"
-                    max="8"
-                    placeholder="1-8"
+                  <Label>מקומות פנויים</Label>
+                  <SeatPicker
                     value={formData.seats}
-                    onChange={(e) =>
-                      setFormData({ ...formData, seats: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, seats: val })
                     }
-                    required
+                    min={1}
+                    max={8}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cost">Price per Seat (₪)</Label>
-                  <Input
-                    id="cost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                  <Label>מחיר למקום (₪)</Label>
+                  <PricePicker
                     value={formData.cost}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cost: e.target.value })
+                    onChange={(val) =>
+                      setFormData({ ...formData, cost: val })
                     }
-                    required
                   />
                 </div>
               </div>
@@ -682,19 +667,19 @@ export default function PostRide() {
                 className="w-full bg-accent hover:bg-accent-hover text-accent-foreground"
                 disabled={isLoading || missing.length > 0}
               >
-                {isLoading ? "Publishing..." : "Publish Ride"}
+                {isLoading ? "מפרסם..." : "פרסם נסיעה"}
               </Button>
               {missing.length > 0 && (
                 <div className="text-sm text-destructive mt-2 flex items-center gap-2">
                   <span>
-                    You must add {missing.join(" and ")} to your profile before posting a ride.
+                    יש להוסיף {missing.join(" ו")} לפרופיל לפני פרסום נסיעה.
                   </span>
                   <button
                     type="button"
                     className="underline text-primary-foreground"
                     onClick={() => navigate("/profile")}
                   >
-                    Edit profile
+                    ערוך פרופיל
                   </button>
                 </div>
               )}

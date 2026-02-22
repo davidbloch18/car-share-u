@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Star, LogOut, CheckCircle, XCircle } from "lucide-react";
 import { useProfileViewModel } from "@/viewmodels/useProfileViewModel";
 import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
+import { getGenderIcon } from "@/components/GenderAvatar";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -77,14 +78,14 @@ export default function Profile() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: (error as any).message || "Failed to update profile",
+        title: "שגיאה",
+        description: (error as any).message || "עדכון הפרופיל נכשל",
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
+        title: "הפרופיל עודכן",
+        description: "הפרופיל שלך עודכן בהצלחה.",
       });
       fetchProfile();
     }
@@ -101,7 +102,7 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-background pb-20 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg text-muted-foreground">Loading profile...</p>
+          <p className="text-lg text-muted-foreground">טוען פרופיל...</p>
         </div>
       </div>
     );
@@ -112,9 +113,7 @@ export default function Profile() {
   const initials = `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`;
   const getAvatarUrl = () => {
     if (profile.avatar_url) return profile.avatar_url;
-    if (profile.gender === 'male') return "https://avatar.iran.liara.run/public/boy";
-    if (profile.gender === 'female') return "https://avatar.iran.liara.run/public/girl";
-    return undefined;
+    return getGenderIcon(profile.gender);
   };
 
   return (
@@ -136,10 +135,10 @@ export default function Profile() {
               <span>
                 {profile.rating_score > 0
                   ? profile.rating_score.toFixed(1)
-                  : "New User"}
+                  : "משתמש חדש"}
               </span>
               {profile.rating_count > 0 && (
-                <span className="text-sm">({profile.rating_count} ratings)</span>
+                <span className="text-sm">({profile.rating_count} דירוגים)</span>
               )}
             </div>
           </div>
@@ -158,7 +157,7 @@ export default function Profile() {
                   <XCircle className="h-5 w-5 text-muted-foreground" />
                 )}
                 <div>
-                  <p className="font-semibold">Student Verification</p>
+                  <p className="font-semibold">אימות סטודנט</p>
                   <p className="text-sm text-muted-foreground">{profile.email}</p>
                 </div>
               </div>
@@ -169,7 +168,7 @@ export default function Profile() {
                     : "bg-muted text-muted-foreground"
                 }
               >
-                {profile.is_verified ? "Verified" : "Not Verified"}
+                {profile.is_verified ? "מאומת" : "לא מאומת"}
               </Badge>
             </div>
             
@@ -182,11 +181,11 @@ export default function Profile() {
                   <XCircle className="h-5 w-5 text-amber-500" />
                 )}
                 <div>
-                  <p className="font-semibold">Email Confirmation</p>
+                  <p className="font-semibold">אישור אימייל</p>
                   <p className="text-sm text-muted-foreground">
                     {session?.user?.email_confirmed_at 
-                      ? "Email confirmed" 
-                      : "Email not confirmed yet"}
+                      ? "האימייל אושר" 
+                      : "האימייל עדיין לא אושר"}
                   </p>
                 </div>
               </div>
@@ -197,7 +196,7 @@ export default function Profile() {
                     : "bg-amber-100 text-amber-700 border-amber-300"
                 }
               >
-                {session?.user?.email_confirmed_at ? "Confirmed" : "Pending"}
+                {session?.user?.email_confirmed_at ? "אושר" : "ממתין"}
               </Badge>
             </div>
           </CardContent>
@@ -206,13 +205,13 @@ export default function Profile() {
         {/* Edit Profile */}
         <Card>
           <CardHeader>
-            <CardTitle>Edit Profile</CardTitle>
+            <CardTitle>עריכת פרופיל</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">שם פרטי</Label>
                   <Input
                     id="firstName"
                     value={formData.firstName}
@@ -223,7 +222,7 @@ export default function Profile() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">שם משפחה</Label>
                   <Input
                     id="lastName"
                     value={formData.lastName}
@@ -236,7 +235,7 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">מספר טלפון</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -249,7 +248,7 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender">מגדר</Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(value) =>
@@ -258,17 +257,17 @@ export default function Profile() {
                   required
                 >
                   <SelectTrigger id="gender">
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder="בחר מגדר" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="male">זכר</SelectItem>
+                    <SelectItem value="female">נקבה</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bitLink">Bit Payment Link</Label>
+                <Label htmlFor="bitLink">קישור תשלום Bit</Label>
                 <Input
                   id="bitLink"
                   type="url"
@@ -279,7 +278,7 @@ export default function Profile() {
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  Passengers will use this link to pay you
+                  הנוסעים ישתמשו בקישור הזה כדי לשלם לך
                 </p>
               </div>
 
@@ -288,7 +287,7 @@ export default function Profile() {
                 className="w-full bg-primary hover:bg-primary-hover"
                 disabled={isLoading}
               >
-                {isLoading ? "Saving..." : "Save Changes"}
+                {isLoading ? "שומר..." : "שמור שינויים"}
               </Button>
             </form>
           </CardContent>
@@ -300,8 +299,8 @@ export default function Profile() {
           className="w-full text-destructive hover:bg-destructive hover:text-destructive-foreground"
           onClick={handleSignOut}
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
+          <LogOut className="ml-2 h-4 w-4" />
+          התנתקות
         </Button>
       </main>
 

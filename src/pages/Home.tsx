@@ -33,7 +33,7 @@ export default function Home() {
   const handleManualRefresh = () => {
     fetchRides();
     toast({
-      description: "Rides refreshed",
+      description: "הנסיעות רועננו",
       duration: 1500,
     });
   };
@@ -92,18 +92,18 @@ export default function Home() {
       <header className="bg-primary text-primary-foreground p-6 pb-12">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-1">Available Rides</h1>
+            <h1 className="text-3xl font-bold mb-1">נסיעות זמינות</h1>
             <p className="text-primary-foreground/90 text-sm">
-              Find your next commute
+              מצא את הנסיעה הבאה שלך
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Where are you going?"
-              className="pl-10 bg-background text-foreground border-0"
+              placeholder="לאן אתה נוסע?"
+              className="pr-10 bg-background text-foreground border-0"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -111,7 +111,7 @@ export default function Home() {
           <Button
             size="icon"
             onClick={handleManualRefresh}
-            title="Refresh rides"
+            title="רענן נסיעות"
             className="shrink-0 bg-background text-foreground hover:bg-background/90"
           >
             <RefreshCw className="h-4 w-4" />
@@ -126,28 +126,28 @@ export default function Home() {
           className="rounded-full whitespace-nowrap"
           onClick={() => setActiveFilter("today")}
         >
-          Today
+          היום
         </Button>
         <Button
           variant={activeFilter === "tomorrow" ? "default" : "secondary"}
           className="rounded-full whitespace-nowrap"
           onClick={() => setActiveFilter("tomorrow")}
         >
-          Tomorrow
+          מחר
         </Button>
         <Button
           variant={activeFilter === "week" ? "default" : "secondary"}
           className="rounded-full whitespace-nowrap"
           onClick={() => setActiveFilter("week")}
         >
-          This Week
+          השבוע
         </Button>
         <Button
           variant={activeFilter === "lowcost" ? "default" : "secondary"}
           className="rounded-full whitespace-nowrap"
           onClick={() => setActiveFilter("lowcost")}
         >
-          Low Cost
+          מחיר נמוך
         </Button>
       </div>
 
@@ -155,13 +155,13 @@ export default function Home() {
       <main className="p-4 space-y-4">
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
-            Loading rides...
+            טוען נסיעות...
           </div>
         ) : filteredRides.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             {searchQuery
-              ? "No rides found for your search"
-              : "No rides available at the moment"}
+              ? "לא נמצאו נסיעות לחיפוש שלך"
+              : "אין נסיעות זמינות כרגע"}
           </div>
         ) : (
           filteredRides.map((ride) => <RideCard key={ride.id} ride={ride} />)

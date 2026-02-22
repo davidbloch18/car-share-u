@@ -118,3 +118,8 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* RTL support: flip Tailwind space-x utilities when dir="rtl" */
+[dir="rtl"] [class*="space-x-"] > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}

@@ -7,11 +7,11 @@ export function BottomNav() {
   const location = useLocation();
 
   const navItems = [
-    { icon: Home, label: "Rides", path: "/home" },
-    { icon: Calendar, label: "Bookings", path: "/bookings" },
-    { icon: Plus, label: "Post", path: "/post-ride", isAction: true },
-    { icon: Bell, label: "Alerts", path: "/notifications" },
-    { icon: User, label: "Profile", path: "/profile" },
+    { icon: Home, label: "נסיעות", path: "/home" },
+    { icon: Calendar, label: "הזמנות", path: "/bookings" },
+    { icon: Plus, label: "פרסם", path: "/post-ride", isAction: true },
+    { icon: Bell, label: "התראות", path: "/notifications" },
+    { icon: User, label: "פרופיל", path: "/profile" },
   ];
 
   return (

@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import type { Session } from "@supabase/supabase-js";
 import { useRidesViewModel } from "@/viewmodels/useRidesViewModel";
 import { useAuthViewModel } from "@/viewmodels/useAuthViewModel";
+import { GenderAvatar, getGenderIcon } from "@/components/GenderAvatar";
 
 export default function RideDetails() {
   const { id } = useParams();
@@ -44,8 +45,8 @@ export default function RideDetails() {
 
     if (rideError) {
       toast({
-        title: "Error",
-        description: "Failed to load ride details",
+        title: "שגיאה",
+        description: "טעינת פרטי הנסיעה נכשלה",
         variant: "destructive",
       });
       return;
@@ -75,8 +76,8 @@ export default function RideDetails() {
 
     if (ride.seats_available <= 0) {
       toast({
-        title: "No Seats Available",
-        description: "This ride is fully booked.",
+        title: "אין מקומות פנויים",
+        description: "הנסיעה מלאה.",
         variant: "destructive",
       });
       return;
@@ -84,8 +85,8 @@ export default function RideDetails() {
 
     if (ride.driver_id === session.user.id) {
       toast({
-        title: "Cannot Join",
-        description: "You cannot join your own ride.",
+        title: "לא ניתן להצטרף",
+        description: "אי אפשר להצטרף לנסיעה של עצמך.",
         variant: "destructive",
       });
       return;
@@ -93,8 +94,8 @@ export default function RideDetails() {
 
     if (ride.pickup_points && ride.pickup_points.length > 0 && !selectedPickup) {
       toast({
-        title: "Pickup Point Required",
-        description: "Please select a pickup point.",
+        title: "נדרשת נקודת איסוף",
+        description: "אנא בחר נקודת איסוף.",
         variant: "destructive",
       });
       return;
@@ -102,8 +103,8 @@ export default function RideDetails() {
 
     if (ride.dropoff_points && ride.dropoff_points.length > 0 && !selectedDropoff) {
       toast({
-        title: "Dropoff Point Required",
-        description: "Please select a dropoff point.",
+        title: "נדרשת נקודת הורדה",
+        description: "אנא בחר נקודת הורדה.",
         variant: "destructive",
       });
       return;
@@ -124,14 +125,14 @@ export default function RideDetails() {
     if (bookingError) {
       if ((bookingError as any).code === "23505") {
         toast({
-          title: "Already Booked",
-          description: "You have already joined this ride.",
+          title: "כבר נרשמת",
+          description: "כבר הצטרפת לנסיעה זו.",
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Error",
-          description: bookingError.message || "Failed to book",
+          title: "שגיאה",
+          description: bookingError.message || "ההזמנה נכשלה",
           variant: "destructive",
         });
       }
@@ -139,8 +140,8 @@ export default function RideDetails() {
     }
 
     toast({
-      title: "Booking Confirmed!",
-      description: "You have successfully joined this ride.",
+      title: "ההזמנה אושרה!",
+      description: "הצטרפת בהצלחה לנסיעה.",
     });
     fetchRideDetails();
     checkBookingStatus();
@@ -162,13 +163,13 @@ export default function RideDetails() {
         >
           <ArrowLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-xl font-semibold">Ride Details</h1>
+        <h1 className="text-xl font-semibold">פרטי נסיעה</h1>
         {isDriver && (
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/post-ride", { state: { editRide: ride } })}
-            className="text-primary-foreground hover:bg-primary-foreground/10 ml-auto"
+            className="text-primary-foreground hover:bg-primary-foreground/10 mr-auto"
           >
             <Edit className="h-5 w-5" />
           </Button>
@@ -184,9 +185,7 @@ export default function RideDetails() {
                 <AvatarImage 
                   src={
                     ride.driver.avatar_url || 
-                    (ride.driver.gender?.toLowerCase() === "male" 
-                      ? "https://avatar.iran.liara.run/public/boy" 
-                      : "https://avatar.iran.liara.run/public/girl")
+                    getGenderIcon(ride.driver.gender)
                   } 
                 />
                 <AvatarFallback className="bg-primary text-primary-foreground text-lg">
@@ -205,7 +204,7 @@ export default function RideDetails() {
               </h2>
               {ride.driver.is_verified && (
                 <Badge className="mt-0.5 bg-primary/10 text-primary border-0 text-xs">
-                  Verified Student
+                  סטודנט מאומת
                 </Badge>
               )}
             </div>
@@ -232,12 +231,12 @@ export default function RideDetails() {
               <MapPin className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-muted-foreground mb-1">Pickup Location</p>
+              <p className="text-xs text-muted-foreground mb-1">נקודת איסוף</p>
               <p className="font-semibold text-base mb-2">{ride.origin}</p>
               
               {!isDriver && !isBooked && ride.pickup_points && ride.pickup_points.length > 0 && (
                 <div className="mt-2 text-sm bg-muted/40 p-3 rounded-md">
-                   <p className="font-medium mb-2 text-destructive">Please choose your pickup point *</p>
+                   <p className="font-medium mb-2 text-destructive">נא לבחור נקודת איסוף *</p>
                    <RadioGroup value={selectedPickup} onValueChange={setSelectedPickup}>
                       {ride.pickup_points.map((point: string, i: number) => (
                         <div key={i} className="flex items-center space-x-2">
@@ -259,12 +258,12 @@ export default function RideDetails() {
               <MapPin className="h-5 w-5 text-destructive" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-muted-foreground mb-1">Destination</p>
+              <p className="text-xs text-muted-foreground mb-1">יעד</p>
               <p className="font-semibold text-base mb-2">{ride.destination}</p>
 
               {!isDriver && !isBooked && ride.dropoff_points && ride.dropoff_points.length > 0 && (
                 <div className="mt-2 text-sm bg-muted/40 p-3 rounded-md">
-                   <p className="font-medium mb-2 text-destructive">Please choose your dropoff point *</p>
+                   <p className="font-medium mb-2 text-destructive">נא לבחור נקודת הורדה *</p>
                    <RadioGroup value={selectedDropoff} onValueChange={setSelectedDropoff}>
                       {ride.dropoff_points.map((point: string, i: number) => (
                         <div key={i} className="flex items-center space-x-2">
@@ -287,7 +286,7 @@ export default function RideDetails() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Departure</p>
+                <p className="text-xs text-muted-foreground mb-0.5">יציאה</p>
                 <p className="font-semibold text-sm">
                   {format(new Date(ride.departure_time), "MMM d, yyyy")}
                 </p>
@@ -301,8 +300,8 @@ export default function RideDetails() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Seats</p>
-                <p className="font-semibold text-sm">{ride.seats_available} available</p>
+                <p className="text-xs text-muted-foreground mb-0.5">מקומות</p>
+                <p className="font-semibold text-sm">{ride.seats_available} פנויים</p>
               </div>
             </div>
           </div>
@@ -313,7 +312,7 @@ export default function RideDetails() {
           <Card className="p-5">
             <div className="flex items-center gap-2 mb-3">
               <Car className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Vehicle Information</h3>
+              <h3 className="font-semibold">מידע על הרכב</h3>
             </div>
             <p className="text-sm">
               {ride.vehicle_model && ride.vehicle_color
@@ -327,31 +326,35 @@ export default function RideDetails() {
         {passengers.length > 0 && (
           <Card className="p-5">
             <h3 className="font-semibold mb-3 text-sm text-primary">
-              Confirmed Passengers ({passengers.length})
+              נוסעים מאושרים ({passengers.length})
             </h3>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               {passengers.map((booking) => (
                 <div key={booking.id} className="flex flex-col items-center">
-                  <Avatar className="h-12 w-12 mb-1">
-                    <AvatarImage 
-                      src={
-                        booking.passenger.avatar_url || 
-                        (booking.passenger.gender?.toLowerCase() === "male" 
-                          ? "https://avatar.iran.liara.run/public/boy" 
-                          : "https://avatar.iran.liara.run/public/girl")
-                      } 
-                    />
-                    <AvatarFallback className="bg-secondary text-xs">
-                      {booking.passenger.first_name[0]}
-                      {booking.passenger.last_name[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  <GenderAvatar
+                    avatarUrl={booking.passenger.avatar_url}
+                    gender={booking.passenger.gender}
+                    fallbackInitials={`${booking.passenger.first_name[0]}${booking.passenger.last_name[0]}`}
+                    className="h-12 w-12 mb-1"
+                  />
                   <p className="text-xs font-medium text-center">
                     {booking.passenger.first_name} {booking.passenger.last_name[0]}.
                   </p>
+                  {booking.passenger.gender && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {booking.passenger.gender === "male" ? "♂" : "♀"}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
+            {/* Gender summary */}
+            {passengers.length > 0 && (
+              <div className="mt-3 pt-3 border-t flex gap-4 text-xs text-muted-foreground">
+                <span>♂ {passengers.filter((b: any) => b.passenger.gender?.toLowerCase() === "male").length} גברים</span>
+                <span>♀ {passengers.filter((b: any) => b.passenger.gender?.toLowerCase() === "female").length} נשים</span>
+              </div>
+            )}
           </Card>
         )}
 
@@ -359,9 +362,9 @@ export default function RideDetails() {
         <Card className="p-5 bg-primary/5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Total Cost</p>
+              <p className="text-xs text-muted-foreground mb-1">עלות</p>
               <p className="text-2xl font-bold text-primary">₪{ride.cost}</p>
-              <p className="text-xs text-muted-foreground">per passenger</p>
+              <p className="text-xs text-muted-foreground">לנוסע</p>
             </div>
             {ride.driver.bit_link ? (
               <Button
@@ -369,7 +372,7 @@ export default function RideDetails() {
                 size="icon"
                 className="h-12 w-12 hover:bg-primary/10 rounded-full"
                 onClick={() => window.open(ride.driver.bit_link, "_blank")}
-                title="Pay with Bit"
+                title="שלם ב-Bit"
               >
                 <Send className="h-8 w-8 text-primary" />
               </Button>
@@ -387,17 +390,17 @@ export default function RideDetails() {
             disabled={isLoading || ride.seats_available <= 0}
           >
             {isLoading
-              ? "Booking..."
+              ? "מזמין..."
               : ride.seats_available <= 0
-              ? "Fully Booked"
-              : "Join This Ride"}
+              ? "אין מקומות פנויים"
+              : "הצטרף לנסיעה"}
           </Button>
         )}
 
         {isBooked && (
           <Card className="p-4 bg-primary/10 border-primary">
             <p className="text-center font-semibold text-primary">
-              ✓ You have booked this ride
+              ✓ הזמנת מקום בנסיעה הזאת
             </p>
           </Card>
         )}
@@ -405,7 +408,7 @@ export default function RideDetails() {
         {isDriver && (
           <Card className="p-4 bg-primary/10 border-primary">
             <p className="text-center font-semibold text-primary">
-              You are the driver of this ride
+              אתה הנהג של הנסיעה הזאת
             </p>
           </Card>
         )}
