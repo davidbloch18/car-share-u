@@ -101,6 +101,21 @@ export function useAuthViewModel() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      return { data, error };
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return {
     session,
     user: session?.user ?? null,
@@ -108,6 +123,7 @@ export function useAuthViewModel() {
     isAuthenticated: !!session?.user,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     resetPassword,
     getSession: () => session,

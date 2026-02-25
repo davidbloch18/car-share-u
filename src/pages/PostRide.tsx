@@ -18,6 +18,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { ScrollTimePicker } from "@/components/ui/scroll-time-picker";
 import { SeatPicker } from "@/components/ui/seat-picker";
 import { PricePicker } from "@/components/ui/price-picker";
+import { notifyRideUpdated } from "@/services/notificationDispatcher";
 
 export default function PostRide() {
   const navigate = useNavigate();
@@ -278,6 +279,28 @@ export default function PostRide() {
             title: isEditMode ? "הנסיעה עודכנה!" : "הנסיעה פורסמה!",
             description: isEditMode ? "הנסיעה שלך עודכנה." : "הנסיעה שלך פורסמה בהצלחה.",
           });
+
+          // Notify passengers if ride was updated
+          if (isEditMode && rideId) {
+            (async () => {
+              const { data: bookings } = await supabase
+                .from("bookings")
+                .select("passenger_id")
+                .eq("ride_id", rideId)
+                .eq("status", "confirmed");
+              if (bookings && bookings.length > 0) {
+                const passengerIds = bookings.map((b: any) => b.passenger_id);
+                notifyRideUpdated(
+                  passengerIds,
+                  formData.origin,
+                  formData.destination,
+                  rideId,
+                  "הנהג עדכן את פרטי הנסיעה",
+                );
+              }
+            })();
+          }
+
           if (isEditMode) {
             navigate(`/ride/${rideId}`);
           } else {
