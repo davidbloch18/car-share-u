@@ -16,13 +16,45 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
-  const { signUp, signIn, signInWithGoogle, resetPassword } = useAuthViewModel();
+  const { session, signUp, signIn, signInWithGoogle, resetPassword } = useAuthViewModel();
   const [isLoading, setIsLoading] = useState<"signin" | "signup" | "reset" | "updatePassword" | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+
+  // Redirect to home if already logged in (handles Google OAuth callback)
+  useEffect(() => {
+    if (session?.user) {
+      // For OAuth users, ensure profile exists with correct name
+      const user = session.user;
+      const meta = user.user_metadata || {};
+      const provider = user.app_metadata?.provider;
+
+      if (provider === 'google') {
+        const firstName = meta.given_name || meta.full_name?.split(' ')[0] || meta.name?.split(' ')[0] || '';
+        const lastName = meta.family_name || meta.full_name?.split(' ').slice(1).join(' ') || meta.name?.split(' ').slice(1).join(' ') || '';
+        const avatarUrl = meta.avatar_url || meta.picture || null;
+
+        // Upsert profile for Google user (in case trigger didn't set names correctly)
+        supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email || '',
+            first_name: firstName,
+            last_name: lastName,
+            avatar_url: avatarUrl,
+          }, { onConflict: 'id', ignoreDuplicates: false })
+          .then(() => {
+            navigate('/home', { replace: true });
+          });
+      } else {
+        navigate('/home', { replace: true });
+      }
+    }
+  }, [session, navigate]);
 
   useEffect(() => {
     // Check if user is coming from password reset email
